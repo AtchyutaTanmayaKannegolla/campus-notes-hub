@@ -249,7 +249,7 @@
 
 <div class="container">
     <header>
-        <h1>📚 Campus Notes Hub</h1>
+        <h1> Campus Notes Hub</h1>
         <button class="btn-primary" onclick="openModal('uploadModal')">+ Upload Notes</button>
     </header>
 
@@ -336,7 +336,7 @@
 </div>
 
 <!-- Floating General AI Assistant -->
-<button class="chat-widget-btn" onclick="toggleGeneralChat()">🤖 Ask StudyBot</button>
+<button class="chat-widget-btn" onclick="toggleGeneralChat()"> Ask StudyBot</button>
 
 <div class="chat-window" id="generalChatWindow">
     <div class="chat-header">
@@ -460,7 +460,7 @@
     /* Document Q&A Handlers */
     function openDocAiModal(id, title) {
         activeDocNoteId = id;
-        document.getElementById("docAiTitle").innerText = `✨ AI Review: ${title}`;
+        document.getElementById("docAiTitle").innerText = ` AI Review: ${title}`;
         document.getElementById("docChatMessages").innerHTML = `<div class="msg msg-bot">Ask anything regarding this file!</div>`;
         openModal("docAiModal");
     }
