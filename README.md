@@ -17,3 +17,6 @@ A full-stack academic resource hub and AI study companion built with FastAPI, SQ
 1. Install dependencies:
    ```bash
    pip install -r requirements.txt
+# Campus Notes Hub
+
+ **Live Demo:** [https://campus-notes-hub.onrender.com](https://campus-notes-hub.onrender.com)
