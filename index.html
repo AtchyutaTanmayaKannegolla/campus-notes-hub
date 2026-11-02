@@ -306,3 +306,220 @@
                     <option value="Syllabus">Syllabus Copy</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label>Select PDF / File</label>
+                <input type="file" id="file" required accept=".pdf">
+            </div>
+            <!-- Contributor Passkey Input -->
+            <div class="form-group">
+                <label>Contributor Passkey</label>
+                <input type="password" id="adminKey" required placeholder="Enter upload passkey (e.g. crrcoe2026)">
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-action" onclick="closeModal('uploadModal')">Cancel</button>
+                <button type="submit" class="btn-primary" id="uploadBtn">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Document AI Modal -->
+<div class="modal" id="docAiModal">
+    <div class="modal-content">
+        <h2 id="docAiTitle">Ask AI about Note</h2>
+        <div class="chat-messages" id="docChatMessages" style="height: 280px; margin-bottom: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
+            <div class="msg msg-bot">Hello! Ask me any question based strictly on this uploaded PDF.</div>
+        </div>
+        <div class="chat-input-bar" style="padding: 0;">
+            <input type="text" id="docQuestionInput" placeholder="e.g. Summarize the key topics..." onkeydown="if(event.key==='Enter') sendDocQuestion()">
+            <button onclick="sendDocQuestion()" id="docSendBtn">Ask</button>
+        </div>
+        <div class="modal-buttons">
+            <button type="button" class="btn-action" onclick="closeModal('docAiModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating General AI Assistant -->
+<button class="chat-widget-btn" onclick="toggleGeneralChat()"> Ask StudyBot</button>
+
+<div class="chat-window" id="generalChatWindow">
+    <div class="chat-header">
+        <span>Campus StudyBot</span>
+        <span style="cursor: pointer;" onclick="toggleGeneralChat()">✕</span>
+    </div>
+    <div class="chat-messages" id="generalChatMessages">
+        <div class="msg msg-bot">Hi! I'm your study assistant. Ask me to explain concepts, give test questions, or simplify formulas!</div>
+    </div>
+    <div class="chat-input-bar">
+        <input type="text" id="generalChatInput" placeholder="Ask a study question..." onkeydown="if(event.key==='Enter') sendGeneralMessage()">
+        <button onclick="sendGeneralMessage()" id="generalSendBtn">Send</button>
+    </div>
+</div>
+
+<script>
+    let activeDocNoteId = null;
+
+    async function loadNotes() {
+        const search = document.getElementById("searchInput").value;
+        const sem = document.getElementById("semesterFilter").value;
+        
+        const res = await fetch(`/api/notes?semester=${sem}&search=${encodeURIComponent(search)}`);
+        const notes = await res.json();
+        
+        const container = document.getElementById("notesContainer");
+        if (notes.length === 0) {
+            container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 40px 0;">No notes found matching your criteria.</p>`;
+            return;
+        }
+
+        container.innerHTML = notes.map(note => `
+            <div class="card">
+                <div>
+                    <div class="card-tags">
+                        <span class="tag">${note.category}</span>
+                        <span class="tag tag-sem">Sem ${note.semester}</span>
+                    </div>
+                    <div class="card-title">${escapeHtml(note.title)}</div>
+                    <div class="card-sub">${escapeHtml(note.subject)}</div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-action btn-ai-doc" onclick="openDocAiModal(${note.id}, '${escapeQuotes(note.title)}')">✨ Ask AI About This PDF</button>
+                    <a class="btn-action" href="/api/download/${note.id}" target="_blank">Download</a>
+                    <button class="btn-action btn-danger" onclick="deleteNote(${note.id})">Delete</button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function escapeQuotes(str) {
+        return (str || "").replace(/'/g, "\\'");
+    }
+
+    async function handleUpload(e) {
+        e.preventDefault();
+        const btn = document.getElementById("uploadBtn");
+        btn.innerText = "Uploading...";
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append("title", document.getElementById("title").value);
+        formData.append("subject", document.getElementById("subject").value);
+        formData.append("semester", document.getElementById("semester").value);
+        formData.append("category", document.getElementById("category").value);
+        formData.append("file", document.getElementById("file").files[0]);
+        formData.append("admin_key", document.getElementById("adminKey").value);
+
+        try {
+            const res = await fetch("/api/upload", { method: "POST", body: formData });
+            if (res.ok) {
+                closeModal('uploadModal');
+                document.getElementById("uploadForm").reset();
+                loadNotes();
+            } else if (res.status === 403) {
+                alert("Unauthorized: Incorrect Contributor Passkey!");
+            } else {
+                const err = await res.json();
+                alert(err.detail || "Upload failed. Try again.");
+            }
+        } catch (error) {
+            alert("Network error occurred during upload.");
+        } finally {
+            btn.innerText = "Upload";
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteNote(id) {
+        if (!confirm("Are you sure you want to delete this resource?")) return;
+        const res = await fetch(`/api/notes/${id}`, { method: "DELETE" });
+        if (res.ok) loadNotes();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add("active"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+    /* Floating StudyBot Handlers */
+    function toggleGeneralChat() {
+        document.getElementById("generalChatWindow").classList.toggle("active");
+    }
+
+    async function sendGeneralMessage() {
+        const input = document.getElementById("generalChatInput");
+        const msg = input.value.trim();
+        if (!msg) return;
+
+        const box = document.getElementById("generalChatMessages");
+        box.innerHTML += `<div class="msg msg-user">${escapeHtml(msg)}</div>`;
+        input.value = "";
+        box.scrollTop = box.scrollHeight;
+
+        const btn = document.getElementById("generalSendBtn");
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/ai/general-chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: msg })
+            });
+            const data = await res.json();
+            const renderedHtml = marked.parse(data.answer || "");
+            box.innerHTML += `<div class="msg msg-bot">${renderedHtml}</div>`;
+        } catch (err) {
+            box.innerHTML += `<div class="msg msg-bot">Failed to get response from server.</div>`;
+        } finally {
+            btn.disabled = false;
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+
+    /* Document Q&A Handlers */
+    function openDocAiModal(id, title) {
+        activeDocNoteId = id;
+        document.getElementById("docAiTitle").innerText = ` AI Review: ${title}`;
+        document.getElementById("docChatMessages").innerHTML = `<div class="msg msg-bot">Ask anything regarding this file!</div>`;
+        openModal("docAiModal");
+    }
+
+    async function sendDocQuestion() {
+        const input = document.getElementById("docQuestionInput");
+        const q = input.value.trim();
+        if (!q || !activeDocNoteId) return;
+
+        const box = document.getElementById("docChatMessages");
+        box.innerHTML += `<div class="msg msg-user">${escapeHtml(q)}</div>`;
+        input.value = "";
+        box.scrollTop = box.scrollHeight;
+
+        const btn = document.getElementById("docSendBtn");
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("/api/ai/doc-chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ note_id: activeDocNoteId, question: q })
+            });
+            const data = await res.json();
+            const renderedHtml = marked.parse(data.answer || "");
+            box.innerHTML += `<div class="msg msg-bot">${renderedHtml}</div>`;
+        } catch (err) {
+            box.innerHTML += `<div class="msg msg-bot">Failed to process document query.</div>`;
+        } finally {
+            btn.disabled = false;
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.innerText = text;
+        return div.innerHTML;
+    }
+
+    loadNotes();
+</script>
+
+</body>
+</html>
