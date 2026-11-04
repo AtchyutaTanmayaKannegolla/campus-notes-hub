@@ -600,12 +600,21 @@
         }
 
         function filterNotes() {
-            const query = document.getElementById("searchInput").value.toLowerCase();
+            const query = document.getElementById("searchInput").value.toLowerCase().trim();
             const sem = document.getElementById("semFilter").value;
 
             const filtered = allNotes.filter(n => {
                 const matches = n.title.toLowerCase().includes(query) || n.subject.toLowerCase().includes(query);
-                const matchesSem = (sem === "ALL" || n.semester === sem);
+                
+                if (sem === "ALL") return matches;
+
+                // Extract numbers to match formats like "5", "SEM 5", or "Semester 5"
+                const selectedNum = sem.replace(/\D/g, "");
+                const noteSemNum = String(n.semester).replace(/\D/g, "");
+
+                const matchesSem = (n.semester === sem) || 
+                                   (selectedNum && noteSemNum && selectedNum === noteSemNum);
+
                 return matches && matchesSem;
             });
 
