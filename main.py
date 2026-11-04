@@ -70,7 +70,6 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
 
     image_bytes = base64.b64decode(b64_str)
 
-    # Models prioritized by high free quota (1,500 RPD) to avoid the 20 RPD cap
     vision_candidates = [
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
@@ -91,7 +90,6 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
         except Exception as e:
             last_error = e
             err_str = str(e)
-            # If hit by quota limit (429) or model missing (404), fall back to next model
             if "429" in err_str or "404" in err_str or "quota" in err_str.lower():
                 continue
             raise e
@@ -102,7 +100,7 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
     )
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_home():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()

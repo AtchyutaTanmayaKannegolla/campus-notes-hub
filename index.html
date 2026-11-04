@@ -189,11 +189,9 @@
     let docImageBase64 = null;
     let studyBotImageBase64 = null;
 
-    // Retry state store
     let lastDocRequest = null;
     let lastStudyBotRequest = null;
 
-    // Fetch and initialize notes on load
     window.addEventListener("DOMContentLoaded", fetchNotes);
 
     async function fetchNotes() {
@@ -254,7 +252,6 @@
       });
     }
 
-    // Modal Toggles
     function openUploadModal() { document.getElementById("uploadModal").classList.remove("hidden"); }
     function closeUploadModal() { document.getElementById("uploadModal").classList.add("hidden"); }
 
@@ -277,7 +274,6 @@
     }
     function closeDocModal() { document.getElementById("docModal").classList.add("hidden"); }
 
-    // Upload Handler
     async function handleUploadSubmit(e) {
       e.preventDefault();
       const btn = document.getElementById("uploadSubmitBtn");
@@ -306,7 +302,6 @@
       }
     }
 
-    // Delete Handler
     async function promptDeleteNote(noteId) {
       const passkey = prompt("Enter Admin Passkey to delete this note:");
       if (!passkey) return;
@@ -324,7 +319,6 @@
       }
     }
 
-    // Clipboard Paste Listener (Ctrl+V)
     window.addEventListener("paste", (e) => {
       const items = (e.clipboardData || e.originalEvent.clipboardData).items;
       for (let item of items) {
@@ -344,7 +338,6 @@
       }
     });
 
-    // Image Handlers
     function handleDocFileSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -383,9 +376,6 @@
       document.getElementById("studyBotImagePreviewBox").classList.add("hidden");
     }
 
-    // ==========================================
-    // DOC CHAT WITH RETRY LOGIC
-    // ==========================================
     async function handleDocChatSubmit(e) {
       if (e) e.preventDefault();
       const input = document.getElementById("docChatInput");
@@ -394,13 +384,9 @@
 
       if (!text && !image) return;
 
-      // Save for retry
       lastDocRequest = { noteId: currentNoteId, question: text, image_base64: image };
 
-      // Render user bubble
       appendMessage("docChatMessages", "user", text, image);
-
-      // Clear input and attachment
       input.value = "";
       clearDocImage();
 
@@ -412,11 +398,9 @@
       const btn = document.getElementById("docSendBtn");
       btn.disabled = true;
 
-      // Remove existing retry boxes if retrying
       const existingError = box.querySelector(".error-retry-card");
       if (existingError) existingError.remove();
 
-      // Show loader
       const loader = document.createElement("div");
       loader.id = "docLoader";
       loader.className = "p-3 bg-gray-100 rounded-lg text-xs text-gray-500 animate-pulse";
@@ -449,9 +433,6 @@
       }
     }
 
-    // ==========================================
-    // STUDYBOT CHAT WITH RETRY LOGIC
-    // ==========================================
     async function handleStudyBotSubmit(e) {
       if (e) e.preventDefault();
       const input = document.getElementById("studyBotInput");
@@ -508,7 +489,6 @@
       }
     }
 
-    // Append Message UI
     function appendMessage(containerId, sender, text, image) {
       const box = document.getElementById(containerId);
       const msgDiv = document.createElement("div");
@@ -541,7 +521,6 @@
       box.scrollTop = box.scrollHeight;
     }
 
-    // Render Retry Card on Error
     function renderRetryCard(containerId, errorMessage, retryFunctionCall) {
       const box = document.getElementById(containerId);
       const card = document.createElement("div");
