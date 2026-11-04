@@ -21,7 +21,6 @@
             padding-bottom: 90px;
         }
 
-        /* Top Header */
         header {
             background: #ffffff;
             border-bottom: 1px solid #e2e8f0;
@@ -44,7 +43,6 @@
             font-size: 1.4rem;
         }
 
-        /* Buttons */
         .btn {
             background-color: #7c3aed;
             color: white;
@@ -92,14 +90,12 @@
             border-color: #fca5a5;
         }
 
-        /* Main Container */
         .container {
             max-width: 1100px;
             margin: 2rem auto;
             padding: 0 1.5rem;
         }
 
-        /* Search & Filter Row */
         .search-row {
             display: flex;
             gap: 1rem;
@@ -134,14 +130,12 @@
             cursor: pointer;
         }
 
-        /* Notes Grid */
         .notes-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
             gap: 1.5rem;
         }
 
-        /* Note Card */
         .note-card {
             background: #ffffff;
             border-radius: 8px;
@@ -190,7 +184,6 @@
             margin-top: -0.35rem;
         }
 
-        /* Light purple Ask AI Button */
         .btn-ai-card {
             background: #f5f3ff;
             color: #7c3aed;
@@ -222,7 +215,6 @@
             flex: 1;
         }
 
-        /* Floating StudyBot Launcher Button */
         .studybot-launcher {
             position: fixed;
             bottom: 25px;
@@ -246,7 +238,6 @@
             background: #6d28d9;
         }
 
-        /* StudyBot Chat Window */
         .studybot-window {
             position: fixed;
             bottom: 80px;
@@ -348,9 +339,10 @@
             display: flex;
             gap: 0.5rem;
             background: #ffffff;
+            align-items: center;
         }
 
-        .chat-footer input {
+        .chat-footer input[type="text"] {
             flex: 1;
             padding: 0.55rem 0.75rem;
             border: 1px solid #cbd5e1;
@@ -359,11 +351,27 @@
             font-size: 0.86rem;
         }
 
-        .chat-footer input:focus {
+        .chat-footer input[type="text"]:focus {
             border-color: #7c3aed;
         }
 
-        /* Modal Overlays */
+        .btn-attach {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.45rem 0.65rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-attach:hover {
+            background: #e2e8f0;
+        }
+
         .modal-backdrop {
             position: fixed;
             top: 0;
@@ -541,17 +549,26 @@
         </div>
     </div>
 
-    <!-- Floating Campus StudyBot Window -->
+    <!-- StudyBot Window -->
     <div id="studyBotWindow" class="studybot-window">
         <div class="studybot-header">
             <span>Campus StudyBot</span>
             <button onclick="toggleStudyBot()">&times;</button>
         </div>
         <div id="botHistory" class="chat-body">
-            <div class="bubble bot">Hi! I'm Campus StudyBot. Ask me about any topic, concept, or code!</div>
+            <div class="bubble bot">Hi! I'm Campus StudyBot. Ask me questions, or attach a screenshot of any problem or diagram!</div>
         </div>
+
+        <!-- Attachment Preview Bar -->
+        <div id="imagePreviewContainer" style="display: none; padding: 0.35rem 0.85rem; background: #f1f5f9; border-top: 1px solid #e2e8f0; align-items: center; justify-content: space-between;">
+            <span id="imagePreviewName" style="font-size: 0.75rem; color: #4338ca; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 250px;"></span>
+            <button type="button" onclick="clearSelectedImage()" style="background: none; border: none; color: #ef4444; font-size: 1.1rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+
         <div class="chat-footer">
-            <input type="text" id="botInput" placeholder="Ask a study question..." onkeydown="if(event.key==='Enter') sendBotMessage()">
+            <input type="file" id="botImageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+            <button type="button" class="btn-attach" onclick="document.getElementById('botImageInput').click()" title="Attach Screenshot">📷</button>
+            <input type="text" id="botInput" placeholder="Ask or explain screenshot..." onkeydown="if(event.key==='Enter') sendBotMessage()">
             <button class="btn" onclick="sendBotMessage()">Send</button>
         </div>
     </div>
@@ -561,6 +578,7 @@
     <script>
         let allNotes = [];
         let activeDocId = null;
+        let attachedImageBase64 = null;
 
         document.addEventListener("DOMContentLoaded", fetchNotes);
 
@@ -612,7 +630,6 @@
                 
                 if (sem === "ALL") return matches;
 
-                // Match both "5" and "SEM 5" formats
                 const selectedNum = sem.replace(/\D/g, "");
                 const noteSemNum = String(n.semester).replace(/\D/g, "");
 
@@ -656,7 +673,7 @@
             }
         }
 
-        // Upload Modal
+        // Upload Modal Handlers
         function openUploadModal() {
             document.getElementById("uploadModal").style.display = "flex";
         }
@@ -709,7 +726,7 @@
             }
         }
 
-        // Doc AI Modal
+        // Doc AI Modal Handlers
         function openDocAiModal(noteId, title) {
             activeDocId = noteId;
             document.getElementById("docAiTitle").innerText = `AI: ${title}`;
@@ -760,20 +777,58 @@
             history.scrollTop = history.scrollHeight;
         }
 
-        // Campus StudyBot
+        // Campus StudyBot Handlers
         function toggleStudyBot() {
             const win = document.getElementById("studyBotWindow");
             win.style.display = (win.style.display === "flex") ? "none" : "flex";
         }
 
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith("image/")) {
+                alert("Please select an image file (PNG, JPG, WebP).");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                attachedImageBase64 = e.target.result;
+                document.getElementById("imagePreviewName").innerText = "Attached: " + file.name;
+                document.getElementById("imagePreviewContainer").style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedImage() {
+            attachedImageBase64 = null;
+            document.getElementById("botImageInput").value = "";
+            document.getElementById("imagePreviewContainer").style.display = "none";
+        }
+
         async function sendBotMessage() {
             const input = document.getElementById("botInput");
             const q = input.value.trim();
-            if (!q) return;
+            if (!q && !attachedImageBase64) return;
 
             const history = document.getElementById("botHistory");
-            history.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
+            
+            let userHtml = "";
+            if (attachedImageBase64) {
+                userHtml += `<img src="${attachedImageBase64}" style="max-width: 100%; max-height: 140px; border-radius: 6px; display: block; margin-bottom: 0.4rem; border: 1px solid rgba(255,255,255,0.3);">`;
+            }
+            if (q) {
+                userHtml += `<div>${escapeHtml(q)}</div>`;
+            }
+            
+            history.innerHTML += `<div class="bubble user">${userHtml}</div>`;
+            
+            const sentImage = attachedImageBase64;
+            const sentText = q;
+
             input.value = "";
+            clearSelectedImage();
 
             const loading = document.createElement("div");
             loading.className = "bubble bot";
@@ -785,7 +840,10 @@
                 const res = await fetch("/api/ai/chat", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ message: q })
+                    body: JSON.stringify({ 
+                        message: sentText || "Please explain or solve what is shown in this image.",
+                        image_base64: sentImage 
+                    })
                 });
 
                 if (!res.ok) {

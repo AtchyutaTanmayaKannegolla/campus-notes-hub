@@ -23,7 +23,8 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 groq_client = groq.Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
-AI_MODEL = "openai/gpt-oss-120b"
+TEXT_MODEL = "openai/gpt-oss-120b"
+VISION_MODEL = "llama-3.2-11b-vision-preview"
 
 app = FastAPI(title="Campus Notes Hub")
 
@@ -38,6 +39,7 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     message: str
+    image_base64: str | None = None
 
 
 class DocChatRequest(BaseModel):
@@ -67,7 +69,7 @@ async def upload_note(
     admin_key: str = Form(...)
 ):
     expected_key = os.getenv("ADMIN_UPLOAD_KEY")
-    if not expected_key or admin_key != expected_key:
+    if not expected_key or admin_key.strip() != expected_key.strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid passkey. Upload access denied."
@@ -77,21 +79,21 @@ async def upload_note(
     sanitized_filename = f"{os.urandom(6).hex()}_{file.filename.replace(' ', '_')}"
     filepath = f"uploads/{sanitized_filename}"
 
-    # Upload directly to Supabase Storage bucket 'notes'
-    storage_res = supabase.storage.from_("notes").upload(
+    # Upload to Supabase Storage bucket
+    supabase.storage.from_("notes").upload(
         path=filepath,
         file=file_bytes,
-        file_options={"content-type": file.content_type or "application/pdf"}
+        file_options={"content-type": "application/pdf"}
     )
 
     file_url = supabase.storage.from_("notes").get_public_url(filepath)
 
-    # Insert note record into Supabase PostgreSQL database
+    # Insert record into database
     insert_res = supabase.table("notes").insert({
-        "title": title,
-        "subject": subject,
-        "semester": semester,
-        "category": category,
+        "title": title.strip(),
+        "subject": subject.strip(),
+        "semester": semester.strip(),
+        "category": category.strip(),
         "filename": file.filename,
         "filepath": filepath,
         "file_url": file_url
@@ -103,7 +105,7 @@ async def upload_note(
 @app.delete("/api/notes/{note_id}")
 async def delete_note(note_id: int, x_admin_key: str = Header(None)):
     expected_key = os.getenv("ADMIN_UPLOAD_KEY")
-    if not x_admin_key or x_admin_key != expected_key:
+    if not x_admin_key or x_admin_key.strip() != (expected_key or "").strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid passkey. Deletion access denied."
@@ -135,21 +137,30 @@ async def study_bot_chat(payload: ChatRequest):
     if not groq_client:
         raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
+    system_prompt = (
+        "You are Campus StudyBot, an expert academic tutor. "
+        "Analyze questions, diagrams, textbook screenshots, or code accurately. "
+        "Format your answer with clean Markdown, concise bullet points, and tables where applicable."
+    )
+
+    if payload.image_base64:
+        active_model = VISION_MODEL
+        user_content = [
+            {"type": "text", "text": payload.message or "Please explain or solve what is shown in this image."},
+            {"type": "image_url", "image_url": {"url": payload.image_base64}}
+        ]
+    else:
+        active_model = TEXT_MODEL
+        user_content = payload.message
+
     try:
         response = groq_client.chat.completions.create(
-            model=AI_MODEL,
+            model=active_model,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are Campus StudyBot, a smart, friendly peer tutor for college students. "
-                        "Help them understand academic topics, solve engineering problems, and summarize concepts cleanly "
-                        "using Markdown, concise lists, and clear explanations."
-                    )
-                },
-                {"role": "user", "content": payload.message}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
             ],
-            temperature=0.6,
+            temperature=0.4,
             max_tokens=1024
         )
         return {"response": response.choices[0].message.content}
@@ -176,18 +187,17 @@ async def document_qa(payload: DocChatRequest):
 
         reader = PdfReader(io.BytesIO(pdf_bytes))
         extracted_text = ""
-        for i, page in enumerate(reader.pages[:10]):  # Read up to the first 10 pages
+        for i, page in enumerate(reader.pages[:10]):
             page_text = page.extract_text() or ""
             extracted_text += f"\n--- Page {i+1} ---\n" + page_text
 
         if not extracted_text.strip():
             return {"response": "Could not extract readable text from this PDF (it may contain scanned images only)."}
 
-        # Limit context to avoid hitting prompt token ceilings
         context = extracted_text[:8000]
 
         response = groq_client.chat.completions.create(
-            model=AI_MODEL,
+            model=TEXT_MODEL,
             messages=[
                 {
                     "role": "system",
