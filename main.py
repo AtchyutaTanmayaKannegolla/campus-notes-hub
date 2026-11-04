@@ -72,7 +72,7 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
     image_bytes = base64.b64decode(b64_str)
     
     # gemini-2.5-flash or gemini-1.5-flash
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-3.8-flash")
 
     response = model.generate_content([
         prompt,
