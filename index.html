@@ -4,224 +4,369 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Campus Notes Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --accent-red: #ef4444;
-            --badge-bg: #e0e7ff;
-            --badge-text: #3730a3;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
             padding-bottom: 90px;
         }
 
+        /* Top Header */
         header {
             background: #ffffff;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid #e2e8f0;
             padding: 1.25rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
 
-        header h1 {
-            font-size: 1.5rem;
-            color: var(--primary);
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 1.45rem;
             font-weight: 700;
+            color: #0f172a;
         }
 
+        .brand-title span.icon {
+            font-size: 1.4rem;
+        }
+
+        /* Buttons */
         .btn {
-            background-color: var(--primary);
+            background-color: #7c3aed;
             color: white;
             border: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 500;
+            padding: 0.55rem 1.15rem;
+            border-radius: 6px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            text-decoration: none;
+            font-size: 0.88rem;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            font-size: 0.9rem;
+            justify-content: center;
+            transition: background 0.15s;
         }
 
         .btn:hover {
-            background-color: var(--primary-hover);
+            background-color: #6d28d9;
         }
 
         .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #475569;
         }
 
         .btn-outline:hover {
-            background-color: #f1f5f9;
+            background: #f1f5f9;
+            color: #0f172a;
         }
 
-        .btn-danger {
-            background-color: transparent;
-            color: var(--accent-red);
-            border: 1px solid #fecaca;
+        .btn-delete {
+            background: #ffffff;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
         }
 
-        .btn-danger:hover {
-            background-color: #fee2e2;
+        .btn-delete:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
         }
 
+        /* Main Container */
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 2rem auto;
             padding: 0 1.5rem;
         }
 
-        .search-controls {
+        /* Search & Filter Row */
+        .search-row {
             display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
             flex-wrap: wrap;
         }
 
-        .search-box {
+        .search-input {
             flex: 1;
-            min-width: 250px;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+            min-width: 260px;
+            padding: 0.65rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
             outline: none;
-            font-size: 0.95rem;
-            background: white;
+            font-size: 0.9rem;
+            background: #ffffff;
+            color: #1e293b;
         }
 
-        .search-box:focus {
-            border-color: var(--primary);
+        .search-input:focus {
+            border-color: #7c3aed;
         }
 
-        .filter-select {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+        .sem-select {
+            padding: 0.65rem 1rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
             outline: none;
-            background: white;
-            color: var(--text-main);
-            font-size: 0.95rem;
+            background: #ffffff;
+            color: #334155;
+            font-size: 0.9rem;
+            cursor: pointer;
         }
 
+        /* Notes Grid */
         .notes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
             gap: 1.5rem;
         }
 
+        /* Note Card Matching Screenshot */
         .note-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            padding: 1.5rem;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 1.25rem;
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
 
-        .note-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
-        }
-
-        .badges {
+        .card-badges {
             display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+            gap: 0.4rem;
         }
 
-        .badge {
-            background-color: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
+        .badge-blue {
+            background: #e0e7ff;
+            color: #4338ca;
+            padding: 0.15rem 0.55rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
         }
 
-        .badge-sem {
-            background-color: #fef3c7;
-            color: #92400e;
+        .badge-yellow {
+            background: #fef3c7;
+            color: #b45309;
+            padding: 0.15rem 0.55rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
         }
 
-        .note-card h3 {
-            font-size: 1.15rem;
-            color: var(--text-main);
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
             word-break: break-word;
         }
 
-        .note-subject {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: -0.25rem;
-        }
-
-        .ai-doc-btn {
-            background: #f5f3ff;
-            color: #6d28d9;
-            border: 1px solid #ddd6fe;
-            padding: 0.6rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
+        .card-subject {
+            color: #64748b;
             font-size: 0.85rem;
-            text-align: center;
-            transition: background 0.2s;
+            margin-top: -0.35rem;
         }
 
-        .ai-doc-btn:hover {
+        /* Light purple Ask AI Button */
+        .btn-ai-card {
+            background: #f5f3ff;
+            color: #7c3aed;
+            border: 1px solid #ddd6fe;
+            padding: 0.55rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: background 0.15s;
+        }
+
+        .btn-ai-card:hover {
             background: #ede9fe;
         }
 
         .card-actions {
             display: flex;
             gap: 0.5rem;
-            margin-top: auto;
-            padding-top: 0.5rem;
+            margin-top: 0.35rem;
         }
 
         .card-actions .btn {
             flex: 1;
-            justify-content: center;
         }
 
-        /* Modals */
-        .modal-overlay {
+        /* Floating StudyBot Launcher Button */
+        .studybot-launcher {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #7c3aed;
+            color: #ffffff;
+            border: none;
+            padding: 0.75rem 1.4rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 50;
+        }
+
+        .studybot-launcher:hover {
+            background: #6d28d9;
+        }
+
+        /* StudyBot Chat Window Matching Screenshot */
+        .studybot-window {
+            position: fixed;
+            bottom: 80px;
+            right: 25px;
+            width: 420px;
+            height: 540px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 60;
+        }
+
+        .studybot-header {
+            background: #7c3aed;
+            color: #ffffff;
+            padding: 0.85rem 1.15rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .studybot-header button {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.25rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .chat-body {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            background: #ffffff;
+            font-size: 0.86rem;
+        }
+
+        .bubble {
+            padding: 0.65rem 0.9rem;
+            border-radius: 8px;
+            max-width: 88%;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .bubble.user {
+            background: #7c3aed;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .bubble.bot {
+            background: #f8fafc;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            align-self: flex-start;
+        }
+
+        /* Markdown tables in bot responses */
+        .bubble.bot table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+        }
+
+        .bubble.bot th, .bubble.bot td {
+            border: 1px solid #cbd5e1;
+            padding: 0.4rem 0.5rem;
+            text-align: left;
+        }
+
+        .bubble.bot th {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .bubble.bot ul, .bubble.bot ol {
+            padding-left: 1.25rem;
+            margin: 0.35rem 0;
+        }
+
+        .bubble.bot p {
+            margin-bottom: 0.4rem;
+        }
+
+        .chat-footer {
+            padding: 0.65rem 0.85rem;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            gap: 0.5rem;
+            background: #ffffff;
+        }
+
+        .chat-footer input {
+            flex: 1;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+            font-size: 0.86rem;
+        }
+
+        .chat-footer input:focus {
+            border-color: #7c3aed;
+        }
+
+        /* Modal Overlays (Upload & Doc AI) */
+        .modal-backdrop {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.45);
             display: none;
             justify-content: center;
             align-items: center;
@@ -229,167 +374,71 @@
             padding: 1rem;
         }
 
-        .modal-card {
-            background: white;
-            border-radius: 14px;
+        .modal-box {
+            background: #ffffff;
+            border-radius: 10px;
             width: 100%;
-            max-width: 520px;
-            padding: 1.75rem;
+            max-width: 500px;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            gap: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
 
-        .modal-header {
+        .modal-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .modal-header h2 {
-            font-size: 1.25rem;
+        .modal-head h2 {
+            font-size: 1.15rem;
+            color: #0f172a;
         }
 
-        .close-btn {
+        .modal-head button {
             background: none;
             border: none;
-            font-size: 1.5rem;
-            color: var(--text-muted);
+            font-size: 1.4rem;
             cursor: pointer;
+            color: #64748b;
         }
 
-        .form-group {
+        .form-field {
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
+            gap: 0.3rem;
         }
 
-        .form-group label {
-            font-size: 0.85rem;
+        .form-field label {
+            font-size: 0.8rem;
             font-weight: 600;
-            color: var(--text-main);
+            color: #334155;
         }
 
-        .form-group input, .form-group select {
-            padding: 0.65rem;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            outline: none;
-            font-size: 0.9rem;
-        }
-
-        /* StudyBot Floating Chat */
-        .chat-toggle {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            color: white;
-            padding: 0.85rem 1.4rem;
-            border-radius: 50px;
-            border: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-            cursor: pointer;
-            z-index: 40;
-            transition: transform 0.2s;
-        }
-
-        .chat-toggle:hover {
-            transform: scale(1.05);
-        }
-
-        .chat-popup {
-            position: fixed;
-            bottom: 85px;
-            right: 25px;
-            width: 380px;
-            height: 520px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
-            border: 1px solid var(--border-color);
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-            z-index: 50;
-        }
-
-        .chat-head {
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            color: white;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-        }
-
-        .chat-messages {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-        }
-
-        .chat-msg {
-            padding: 0.75rem;
-            border-radius: 10px;
-            max-width: 88%;
-            line-height: 1.4;
-            word-break: break-word;
-        }
-
-        .chat-msg.user {
-            background: #e0e7ff;
-            color: #1e1b4b;
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-
-        .chat-msg.bot {
-            background: #f1f5f9;
-            color: var(--text-main);
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-
-        .chat-input-bar {
-            padding: 0.75rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .chat-input-bar input {
-            flex: 1;
+        .form-field input, .form-field select {
             padding: 0.6rem;
             border-radius: 6px;
-            border: 1px solid var(--border-color);
+            border: 1px solid #cbd5e1;
             outline: none;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
         }
 
-        /* Doc Q&A Modal Box */
-        .doc-chat-box {
+        .doc-modal-content {
             max-width: 650px;
-            height: 600px;
+            height: 560px;
         }
 
-        .doc-chat-history {
+        .doc-history {
             flex: 1;
             overflow-y: auto;
-            padding: 0.5rem;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
             background: #fafafa;
         }
     </style>
@@ -397,14 +446,17 @@
 <body>
 
     <header>
-        <h1>Campus Notes Hub</h1>
+        <div class="brand-title">
+            <span class="icon">📑</span>
+            <span>Campus Notes Hub</span>
+        </div>
         <button class="btn" onclick="openUploadModal()">+ Upload Material</button>
     </header>
 
     <div class="container">
-        <div class="search-controls">
-            <input type="text" id="searchInput" class="search-box" placeholder="Search by title or subject..." oninput="filterNotes()">
-            <select id="semFilter" class="filter-select" onchange="filterNotes()">
+        <div class="search-row">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by title or subject..." oninput="filterNotes()">
+            <select id="semFilter" class="sem-select" onchange="filterNotes()">
                 <option value="ALL">All Semesters</option>
                 <option value="SEM 1">Semester 1</option>
                 <option value="SEM 2">Semester 2</option>
@@ -417,28 +469,26 @@
             </select>
         </div>
 
-        <div id="notesContainer" class="notes-grid">
-            <!-- Dynamic note cards render here -->
-        </div>
+        <div id="notesContainer" class="notes-grid"></div>
     </div>
 
     <!-- Upload Modal -->
-    <div id="uploadModal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
+    <div id="uploadModal" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-head">
                 <h2>Upload Academic Note</h2>
-                <button class="close-btn" onclick="closeUploadModal()">&times;</button>
+                <button onclick="closeUploadModal()">&times;</button>
             </div>
             <form id="uploadForm" onsubmit="handleUpload(event)">
-                <div class="form-group">
+                <div class="form-field">
                     <label>Resource Title</label>
-                    <input type="text" id="uploadTitle" required placeholder="e.g. Unit 1 Complete Notes">
+                    <input type="text" id="uploadTitle" required placeholder="e.g. ALL UNITS QUESTIONS">
                 </div>
-                <div class="form-group">
+                <div class="form-field">
                     <label>Subject</label>
-                    <input type="text" id="uploadSubject" required placeholder="e.g. Operating Systems">
+                    <input type="text" id="uploadSubject" required placeholder="e.g. CN">
                 </div>
-                <div class="form-group">
+                <div class="form-field">
                     <label>Semester</label>
                     <select id="uploadSemester" required>
                         <option value="SEM 1">Semester 1</option>
@@ -451,58 +501,58 @@
                         <option value="SEM 8">Semester 8</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-field">
                     <label>Category</label>
                     <select id="uploadCategory" required>
-                        <option value="NOTES">Notes</option>
-                        <option value="PYQ">Previous Year Questions</option>
-                        <option value="SYLLABUS">Syllabus</option>
+                        <option value="NOTES">NOTES</option>
+                        <option value="PYQ">PYQ</option>
+                        <option value="SYLLABUS">SYLLABUS</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-field">
                     <label>PDF Document</label>
                     <input type="file" id="uploadFile" accept=".pdf" required>
                 </div>
-                <div class="form-group">
+                <div class="form-field">
                     <label>Contributor Passkey</label>
-                    <input type="password" id="uploadPasskey" placeholder="Enter administrative passkey" required>
+                    <input type="password" id="uploadPasskey" placeholder="Enter passkey to upload" required>
                 </div>
-                <button type="submit" class="btn" style="width: 100%; margin-top: 0.5rem;">Upload File</button>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 0.5rem;">Upload Document</button>
             </form>
         </div>
     </div>
 
-    <!-- Doc AI Q&A Modal -->
-    <div id="docAiModal" class="modal-overlay">
-        <div class="modal-card doc-chat-box">
-            <div class="modal-header">
+    <!-- Doc AI Modal -->
+    <div id="docAiModal" class="modal-backdrop">
+        <div class="modal-box doc-modal-content">
+            <div class="modal-head">
                 <h2 id="docAiTitle">Ask AI About This PDF</h2>
-                <button class="close-btn" onclick="closeDocAiModal()">&times;</button>
+                <button onclick="closeDocAiModal()">&times;</button>
             </div>
-            <div id="docChatHistory" class="doc-chat-history"></div>
-            <div class="chat-input-bar">
-                <input type="text" id="docChatInput" placeholder="Ask questions about this PDF...">
+            <div id="docHistory" class="doc-history"></div>
+            <div class="chat-footer">
+                <input type="text" id="docInput" placeholder="Ask questions about this PDF..." onkeydown="if(event.key==='Enter') sendDocMessage()">
                 <button class="btn" onclick="sendDocMessage()">Ask</button>
             </div>
         </div>
     </div>
 
-    <!-- Campus StudyBot Widget -->
-    <button class="chat-toggle" onclick="toggleStudyBot()">Ask StudyBot</button>
-
-    <div id="studyBotWindow" class="chat-popup">
-        <div class="chat-head">
+    <!-- Floating Campus StudyBot Window -->
+    <div id="studyBotWindow" class="studybot-window">
+        <div class="studybot-header">
             <span>Campus StudyBot</span>
-            <button class="close-btn" style="color: white;" onclick="toggleStudyBot()">&times;</button>
+            <button onclick="toggleStudyBot()">&times;</button>
         </div>
-        <div id="botChatMessages" class="chat-messages">
-            <div class="chat-msg bot">Hi! I'm your campus study assistant. Ask me questions about concepts, exam prep, or code problems!</div>
+        <div id="botHistory" class="chat-body">
+            <div class="bubble bot">Hi! I'm Campus StudyBot. Ask me about any topic, concept, or code!</div>
         </div>
-        <div class="chat-input-bar">
-            <input type="text" id="botChatInput" placeholder="Ask a study question..." onkeydown="if(event.key==='Enter') sendStudyBotMessage()">
-            <button class="btn" onclick="sendStudyBotMessage()">Send</button>
+        <div class="chat-footer">
+            <input type="text" id="botInput" placeholder="Ask a study question..." onkeydown="if(event.key==='Enter') sendBotMessage()">
+            <button class="btn" onclick="sendBotMessage()">Send</button>
         </div>
     </div>
+
+    <button class="studybot-launcher" onclick="toggleStudyBot()">✨ Ask StudyBot</button>
 
     <script>
         let allNotes = [];
@@ -525,7 +575,7 @@
             container.innerHTML = "";
 
             if (!notes || notes.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem;">No notes available. Be the first to upload!</div>`;
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 3rem;">No notes available. Click '+ Upload Material' to add one.</div>`;
                 return;
             }
 
@@ -533,16 +583,16 @@
                 const card = document.createElement("div");
                 card.className = "note-card";
                 card.innerHTML = `
-                    <div class="badges">
-                        <span class="badge">${note.category}</span>
-                        <span class="badge badge-sem">${note.semester}</span>
+                    <div class="card-badges">
+                        <span class="badge-blue">${escapeHtml(note.category)}</span>
+                        <span class="badge-yellow">${escapeHtml(note.semester)}</span>
                     </div>
-                    <h3>${escapeHtml(note.title)}</h3>
-                    <div class="note-subject">${escapeHtml(note.subject)}</div>
-                    <button class="ai-doc-btn" onclick="openDocAiModal(${note.id}, '${escapeHtml(note.title)}')">✨ Ask AI About This PDF</button>
+                    <div class="card-title">${escapeHtml(note.title)}</div>
+                    <div class="card-subject">${escapeHtml(note.subject)}</div>
+                    <button class="btn-ai-card" onclick="openDocAiModal(${note.id}, '${escapeHtml(note.title)}')">✨ Ask AI About This PDF</button>
                     <div class="card-actions">
                         <a href="/api/notes/${note.id}/download" target="_blank" class="btn btn-outline">Download</a>
-                        <button class="btn btn-danger" onclick="deleteNote(${note.id})">Delete</button>
+                        <button class="btn btn-delete" onclick="deleteNote(${note.id})">Delete</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -554,9 +604,9 @@
             const sem = document.getElementById("semFilter").value;
 
             const filtered = allNotes.filter(n => {
-                const matchesSearch = n.title.toLowerCase().includes(query) || n.subject.toLowerCase().includes(query);
+                const matches = n.title.toLowerCase().includes(query) || n.subject.toLowerCase().includes(query);
                 const matchesSem = (sem === "ALL" || n.semester === sem);
-                return matchesSearch && matchesSem;
+                return matches && matchesSem;
             });
 
             renderNotes(filtered);
@@ -634,7 +684,7 @@
                 fetchNotes();
             } catch (err) {
                 console.error(err);
-                alert("Upload failed. Check your network or file size.");
+                alert("Upload failed. Please check connection.");
             }
         }
 
@@ -642,8 +692,8 @@
         function openDocAiModal(noteId, title) {
             activeDocId = noteId;
             document.getElementById("docAiTitle").innerText = `AI: ${title}`;
-            document.getElementById("docChatHistory").innerHTML = `
-                <div class="chat-msg bot">Ask any specific question about <strong>${title}</strong>!</div>
+            document.getElementById("docHistory").innerHTML = `
+                <div class="bubble bot">Ask any question directly about <strong>${title}</strong>!</div>
             `;
             document.getElementById("docAiModal").style.display = "flex";
         }
@@ -654,17 +704,17 @@
         }
 
         async function sendDocMessage() {
-            const input = document.getElementById("docChatInput");
+            const input = document.getElementById("docInput");
             const q = input.value.trim();
             if (!q || !activeDocId) return;
 
-            const history = document.getElementById("docChatHistory");
-            history.innerHTML += `<div class="chat-msg user">${escapeHtml(q)}</div>`;
+            const history = document.getElementById("docHistory");
+            history.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
             input.value = "";
 
             const loading = document.createElement("div");
-            loading.className = "chat-msg bot";
-            loading.innerText = "Analyzing PDF...";
+            loading.className = "bubble bot";
+            loading.innerHTML = "<em>Analyzing PDF...</em>";
             history.appendChild(loading);
             history.scrollTop = history.scrollHeight;
 
@@ -674,10 +724,17 @@
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ note_id: activeDocId, question: q })
                 });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml(err.detail || "Failed to process PDF.")}</span>`;
+                    return;
+                }
+
                 const data = await res.json();
                 loading.innerHTML = marked.parse(data.response || "No response received.");
             } catch (err) {
-                loading.innerText = "Failed to fetch response. Try again.";
+                loading.innerHTML = `<span style="color: #ef4444;">Network error. Please try again.</span>`;
             }
             history.scrollTop = history.scrollHeight;
         }
@@ -688,18 +745,18 @@
             win.style.display = (win.style.display === "flex") ? "none" : "flex";
         }
 
-        async function sendStudyBotMessage() {
-            const input = document.getElementById("botChatInput");
+        async function sendBotMessage() {
+            const input = document.getElementById("botInput");
             const q = input.value.trim();
             if (!q) return;
 
-            const history = document.getElementById("botChatMessages");
-            history.innerHTML += `<div class="chat-msg user">${escapeHtml(q)}</div>`;
+            const history = document.getElementById("botHistory");
+            history.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
             input.value = "";
 
             const loading = document.createElement("div");
-            loading.className = "chat-msg bot";
-            loading.innerText = "Thinking...";
+            loading.className = "bubble bot";
+            loading.innerHTML = "<em>Thinking...</em>";
             history.appendChild(loading);
             history.scrollTop = history.scrollHeight;
 
@@ -709,10 +766,17 @@
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ message: q })
                 });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml(err.detail || "StudyBot failed to respond.")}</span>`;
+                    return;
+                }
+
                 const data = await res.json();
-                loading.innerHTML = marked.parse(data.response || "No response generated.");
+                loading.innerHTML = marked.parse(data.response || "No response received.");
             } catch (err) {
-                loading.innerText = "Failed to communicate with StudyBot.";
+                loading.innerHTML = `<span style="color: #ef4444;">Failed to communicate with StudyBot.</span>`;
             }
             history.scrollTop = history.scrollHeight;
         }
