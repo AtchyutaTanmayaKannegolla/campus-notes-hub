@@ -1,5 +1,6 @@
 import os
 import io
+import base64
 import urllib.request
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, status
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 import groq
 from pypdf import PdfReader
+import google.generativeai as genai
 
 load_dotenv()
 
@@ -16,6 +18,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ADMIN_UPLOAD_KEY = os.getenv("ADMIN_UPLOAD_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables.")
@@ -23,8 +26,11 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 groq_client = groq.Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+# Text model on Groq
 TEXT_MODEL = "openai/gpt-oss-120b"
-VISION_MODEL = "qwen/qwen3.8-27b"
 
 app = FastAPI(title="Campus Notes Hub")
 
@@ -46,6 +52,33 @@ class DocChatRequest(BaseModel):
     note_id: int
     question: str
     image_base64: str | None = None
+
+
+def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
+    """Extracts base64 bytes and prompts Gemini Flash for multimodal analysis."""
+    if not GEMINI_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="GEMINI_API_KEY is not configured on the server."
+        )
+
+    if "," in image_data_url:
+        header, b64_str = image_data_url.split(",", 1)
+        mime_type = header.split(";")[0].replace("data:", "")
+    else:
+        b64_str = image_data_url
+        mime_type = "image/png"
+
+    image_bytes = base64.b64decode(b64_str)
+    
+    # gemini-2.5-flash or gemini-1.5-flash
+    model = genai.GenerativeModel("gemini-2.5-flash")
+
+    response = model.generate_content([
+        prompt,
+        {"mime_type": mime_type, "data": image_bytes}
+    ])
+    return response.text
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -80,7 +113,7 @@ async def upload_note(
     sanitized_filename = f"{os.urandom(6).hex()}_{file.filename.replace(' ', '_')}"
     filepath = f"uploads/{sanitized_filename}"
 
-    # Upload to Supabase Storage bucket
+    # Upload PDF to Supabase Storage bucket
     supabase.storage.from_("notes").upload(
         path=filepath,
         file=file_bytes,
@@ -89,7 +122,7 @@ async def upload_note(
 
     file_url = supabase.storage.from_("notes").get_public_url(filepath)
 
-    # Insert record into database
+    # Insert note metadata record
     insert_res = supabase.table("notes").insert({
         "title": title.strip(),
         "subject": subject.strip(),
@@ -135,31 +168,32 @@ async def download_note(note_id: int):
 
 @app.post("/api/ai/chat")
 async def study_bot_chat(payload: ChatRequest):
+    # Route image/screenshot queries directly to Gemini Vision
+    if payload.image_base64:
+        try:
+            prompt = (
+                "You are Campus StudyBot, an expert academic tutor. "
+                "Analyze this diagram, screenshot, or handwritten note and provide a clear, structured explanation:\n\n"
+                f"{payload.message or 'Explain this image in detail.'}"
+            )
+            result = analyze_image_with_gemini(prompt, payload.image_base64)
+            return {"response": result}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Image vision processing error: {str(e)}")
+
+    # Route pure text queries to Groq
     if not groq_client:
         raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
-    system_prompt = (
-        "You are Campus StudyBot, an expert academic tutor. "
-        "Analyze questions, diagrams, textbook screenshots, or code accurately. "
-        "Format your answer with clean Markdown, concise bullet points, and tables where applicable."
-    )
-
-    if payload.image_base64:
-        active_model = VISION_MODEL
-        user_content = [
-            {"type": "text", "text": payload.message or "Please explain or solve what is shown in this image."},
-            {"type": "image_url", "image_url": {"url": payload.image_base64}}
-        ]
-    else:
-        active_model = TEXT_MODEL
-        user_content = payload.message
-
     try:
         response = groq_client.chat.completions.create(
-            model=active_model,
+            model=TEXT_MODEL,
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
+                {
+                    "role": "system",
+                    "content": "You are Campus StudyBot, an expert academic tutor. Format your answers with clean Markdown, concise bullet points, and code blocks where applicable."
+                },
+                {"role": "user", "content": payload.message}
             ],
             temperature=0.4,
             max_tokens=1024
@@ -171,9 +205,6 @@ async def study_bot_chat(payload: ChatRequest):
 
 @app.post("/api/ai/doc-chat")
 async def document_qa(payload: DocChatRequest):
-    if not groq_client:
-        raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
-
     res = supabase.table("notes").select("file_url, title").eq("id", payload.note_id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Note document not found.")
@@ -193,30 +224,29 @@ async def document_qa(payload: DocChatRequest):
             extracted_text += f"\n--- Page {i+1} ---\n" + page_text
 
         context = extracted_text[:8000] if extracted_text.strip() else "No text extracted from PDF."
-
-        system_prompt = (
-            f"You are an academic document assistant analyzing notes titled '{title}'. "
-            "Answer questions using the provided document context and any attached diagrams or screenshots. "
-            "Use clean Markdown."
+        doc_prompt = (
+            f"You are an academic document assistant analyzing notes titled '{title}'.\n\n"
+            f"Document Excerpt:\n{context}\n\n"
+            f"User Question/Prompt: {payload.question or 'Explain the attached screenshot in the context of this document.'}"
         )
 
-        user_text = f"Document Excerpt:\n{context}\n\nQuestion / Note: {payload.question or 'Analyze the attached image in the context of this document.'}"
-
+        # Route image/screenshot queries directly to Gemini Vision
         if payload.image_base64:
-            active_model = VISION_MODEL
-            user_content = [
-                {"type": "text", "text": user_text},
-                {"type": "image_url", "image_url": {"url": payload.image_base64}}
-            ]
-        else:
-            active_model = TEXT_MODEL
-            user_content = user_text
+            result = analyze_image_with_gemini(doc_prompt, payload.image_base64)
+            return {"response": result}
+
+        # Route pure text queries to Groq
+        if not groq_client:
+            raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
         response = groq_client.chat.completions.create(
-            model=active_model,
+            model=TEXT_MODEL,
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
+                {
+                    "role": "system",
+                    "content": f"You are an academic document assistant analyzing notes titled '{title}'. Answer clearly using the provided document excerpt in clean Markdown."
+                },
+                {"role": "user", "content": doc_prompt}
             ],
             temperature=0.3,
             max_tokens=1024
