@@ -24,7 +24,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 groq_client = groq.Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 TEXT_MODEL = "openai/gpt-oss-120b"
-VISION_MODEL = "meta-llama/llama-4-scout-17b-16k"
+VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 app = FastAPI(title="Campus Notes Hub")
 
