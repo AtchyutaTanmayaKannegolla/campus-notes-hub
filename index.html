@@ -372,6 +372,34 @@
             background: #e2e8f0;
         }
 
+        .attachment-preview {
+            display: none;
+            padding: 0.35rem 0.85rem;
+            background: #f1f5f9;
+            border-top: 1px solid #e2e8f0;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .attachment-preview span {
+            font-size: 0.75rem;
+            color: #4338ca;
+            font-weight: 600;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 280px;
+        }
+
+        .attachment-preview button {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.1rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
         .modal-backdrop {
             position: fixed;
             top: 0;
@@ -439,7 +467,7 @@
 
         .doc-modal-content {
             max-width: 650px;
-            height: 560px;
+            height: 580px;
         }
 
         .doc-history {
@@ -534,7 +562,7 @@
         </div>
     </div>
 
-    <!-- Doc AI Modal -->
+    <!-- Doc AI Modal with Camera & Screenshot Paste Support -->
     <div id="docAiModal" class="modal-backdrop">
         <div class="modal-box doc-modal-content">
             <div class="modal-head">
@@ -542,33 +570,40 @@
                 <button onclick="closeDocAiModal()">&times;</button>
             </div>
             <div id="docHistory" class="doc-history"></div>
+
+            <div id="docImagePreviewContainer" class="attachment-preview">
+                <span id="docImagePreviewName"></span>
+                <button type="button" onclick="clearSelectedDocImage()">&times;</button>
+            </div>
+
             <div class="chat-footer">
-                <input type="text" id="docInput" placeholder="Ask questions about this PDF..." onkeydown="if(event.key==='Enter') sendDocMessage()">
+                <input type="file" id="docImageInput" accept="image/*" style="display: none;" onchange="handleDocImageSelect(event)">
+                <button type="button" class="btn-attach" onclick="document.getElementById('docImageInput').click()" title="Attach or Paste Screenshot">📷</button>
+                <input type="text" id="docInput" placeholder="Ask question or paste screenshot (Ctrl+V)..." onkeydown="if(event.key==='Enter') sendDocMessage()">
                 <button class="btn" onclick="sendDocMessage()">Ask</button>
             </div>
         </div>
     </div>
 
-    <!-- StudyBot Window -->
+    <!-- StudyBot Window with Camera & Screenshot Paste Support -->
     <div id="studyBotWindow" class="studybot-window">
         <div class="studybot-header">
             <span>Campus StudyBot</span>
             <button onclick="toggleStudyBot()">&times;</button>
         </div>
         <div id="botHistory" class="chat-body">
-            <div class="bubble bot">Hi! I'm Campus StudyBot. Ask me questions, or attach a screenshot of any problem or diagram!</div>
+            <div class="bubble bot">Hi! I'm Campus StudyBot. Ask me questions, click 📷, or press <strong>Ctrl+V</strong> to paste a screenshot!</div>
         </div>
 
-        <!-- Attachment Preview Bar -->
-        <div id="imagePreviewContainer" style="display: none; padding: 0.35rem 0.85rem; background: #f1f5f9; border-top: 1px solid #e2e8f0; align-items: center; justify-content: space-between;">
-            <span id="imagePreviewName" style="font-size: 0.75rem; color: #4338ca; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 250px;"></span>
-            <button type="button" onclick="clearSelectedImage()" style="background: none; border: none; color: #ef4444; font-size: 1.1rem; cursor: pointer; line-height: 1;">&times;</button>
+        <div id="imagePreviewContainer" class="attachment-preview">
+            <span id="imagePreviewName"></span>
+            <button type="button" onclick="clearSelectedImage()">&times;</button>
         </div>
 
         <div class="chat-footer">
             <input type="file" id="botImageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
-            <button type="button" class="btn-attach" onclick="document.getElementById('botImageInput').click()" title="Attach Screenshot">📷</button>
-            <input type="text" id="botInput" placeholder="Ask or explain screenshot..." onkeydown="if(event.key==='Enter') sendBotMessage()">
+            <button type="button" class="btn-attach" onclick="document.getElementById('botImageInput').click()" title="Attach or Paste Screenshot">📷</button>
+            <input type="text" id="botInput" placeholder="Ask or paste screenshot (Ctrl+V)..." onkeydown="if(event.key==='Enter') sendBotMessage()">
             <button class="btn" onclick="sendBotMessage()">Send</button>
         </div>
     </div>
@@ -579,8 +614,38 @@
         let allNotes = [];
         let activeDocId = null;
         let attachedImageBase64 = null;
+        let attachedDocImageBase64 = null;
 
         document.addEventListener("DOMContentLoaded", fetchNotes);
+
+        // Global Paste Listener (Ctrl + V for Screenshots from Clipboard)
+        document.addEventListener("paste", function (e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image") !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+
+                    reader.onload = function (event) {
+                        const docModal = document.getElementById("docAiModal");
+                        if (docModal && docModal.style.display === "flex") {
+                            attachedDocImageBase64 = event.target.result;
+                            document.getElementById("docImagePreviewName").innerText = "Pasted Screenshot Ready";
+                            document.getElementById("docImagePreviewContainer").style.display = "flex";
+                        } else {
+                            attachedImageBase64 = event.target.result;
+                            const win = document.getElementById("studyBotWindow");
+                            if (win.style.display !== "flex") {
+                                toggleStudyBot();
+                            }
+                            document.getElementById("imagePreviewName").innerText = "Pasted Screenshot Ready";
+                            document.getElementById("imagePreviewContainer").style.display = "flex";
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
 
         async function fetchNotes() {
             try {
@@ -673,7 +738,7 @@
             }
         }
 
-        // Upload Modal Handlers
+        // Upload Handlers
         function openUploadModal() {
             document.getElementById("uploadModal").style.display = "flex";
         }
@@ -726,12 +791,13 @@
             }
         }
 
-        // Doc AI Modal Handlers
+        // Doc AI Handlers
         function openDocAiModal(noteId, title) {
             activeDocId = noteId;
+            clearSelectedDocImage();
             document.getElementById("docAiTitle").innerText = `AI: ${title}`;
             document.getElementById("docHistory").innerHTML = `
-                <div class="bubble bot">Ask any question directly about <strong>${title}</strong>!</div>
+                <div class="bubble bot">Ask questions directly about <strong>${title}</strong>, or paste a screenshot (Ctrl+V)!</div>
             `;
             document.getElementById("docAiModal").style.display = "flex";
         }
@@ -739,20 +805,57 @@
         function closeDocAiModal() {
             document.getElementById("docAiModal").style.display = "none";
             activeDocId = null;
+            clearSelectedDocImage();
+        }
+
+        function handleDocImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                attachedDocImageBase64 = e.target.result;
+                document.getElementById("docImagePreviewName").innerText = "Attached: " + file.name;
+                document.getElementById("docImagePreviewContainer").style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearSelectedDocImage() {
+            attachedDocImageBase64 = null;
+            const input = document.getElementById("docImageInput");
+            if (input) input.value = "";
+            const prev = document.getElementById("docImagePreviewContainer");
+            if (prev) prev.style.display = "none";
         }
 
         async function sendDocMessage() {
             const input = document.getElementById("docInput");
             const q = input.value.trim();
-            if (!q || !activeDocId) return;
+            if (!q && !attachedDocImageBase64) return;
+            if (!activeDocId) return;
 
             const history = document.getElementById("docHistory");
-            history.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
+
+            let userHtml = "";
+            if (attachedDocImageBase64) {
+                userHtml += `<img src="${attachedDocImageBase64}" style="max-width: 100%; max-height: 140px; border-radius: 6px; display: block; margin-bottom: 0.4rem; border: 1px solid rgba(255,255,255,0.3);">`;
+            }
+            if (q) {
+                userHtml += `<div>${escapeHtml(q)}</div>`;
+            }
+
+            history.innerHTML += `<div class="bubble user">${userHtml}</div>`;
+
+            const sentImage = attachedDocImageBase64;
+            const sentText = q;
+
             input.value = "";
+            clearSelectedDocImage();
 
             const loading = document.createElement("div");
             loading.className = "bubble bot";
-            loading.innerHTML = "<em>Analyzing PDF...</em>";
+            loading.innerHTML = "<em>Analyzing PDF & screenshot...</em>";
             history.appendChild(loading);
             history.scrollTop = history.scrollHeight;
 
@@ -760,7 +863,11 @@
                 const res = await fetch("/api/ai/doc-chat", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ note_id: activeDocId, question: q })
+                    body: JSON.stringify({ 
+                        note_id: activeDocId, 
+                        question: sentText || "Please explain or solve what is shown in this image.",
+                        image_base64: sentImage 
+                    })
                 });
 
                 if (!res.ok) {
@@ -787,11 +894,6 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            if (!file.type.startsWith("image/")) {
-                alert("Please select an image file (PNG, JPG, WebP).");
-                return;
-            }
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 attachedImageBase64 = e.target.result;
@@ -803,8 +905,10 @@
 
         function clearSelectedImage() {
             attachedImageBase64 = null;
-            document.getElementById("botImageInput").value = "";
-            document.getElementById("imagePreviewContainer").style.display = "none";
+            const input = document.getElementById("botImageInput");
+            if (input) input.value = "";
+            const prev = document.getElementById("imagePreviewContainer");
+            if (prev) prev.style.display = "none";
         }
 
         async function sendBotMessage() {
@@ -832,7 +936,7 @@
 
             const loading = document.createElement("div");
             loading.className = "bubble bot";
-            loading.innerHTML = "<em>Thinking...</em>";
+            loading.innerHTML = "<em>Analyzing image & thinking...</em>";
             history.appendChild(loading);
             history.scrollTop = history.scrollHeight;
 

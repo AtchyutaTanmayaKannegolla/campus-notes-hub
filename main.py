@@ -45,6 +45,7 @@ class ChatRequest(BaseModel):
 class DocChatRequest(BaseModel):
     note_id: int
     question: str
+    image_base64: str | None = None
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -191,26 +192,31 @@ async def document_qa(payload: DocChatRequest):
             page_text = page.extract_text() or ""
             extracted_text += f"\n--- Page {i+1} ---\n" + page_text
 
-        if not extracted_text.strip():
-            return {"response": "Could not extract readable text from this PDF (it may contain scanned images only)."}
+        context = extracted_text[:8000] if extracted_text.strip() else "No text extracted from PDF."
 
-        context = extracted_text[:8000]
+        system_prompt = (
+            f"You are an academic document assistant analyzing notes titled '{title}'. "
+            "Answer questions using the provided document context and any attached diagrams or screenshots. "
+            "Use clean Markdown."
+        )
+
+        user_text = f"Document Excerpt:\n{context}\n\nQuestion / Note: {payload.question or 'Analyze the attached image in the context of this document.'}"
+
+        if payload.image_base64:
+            active_model = VISION_MODEL
+            user_content = [
+                {"type": "text", "text": user_text},
+                {"type": "image_url", "image_url": {"url": payload.image_base64}}
+            ]
+        else:
+            active_model = TEXT_MODEL
+            user_content = user_text
 
         response = groq_client.chat.completions.create(
-            model=TEXT_MODEL,
+            model=active_model,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        f"You are an academic document assistant analyzing notes titled '{title}'. "
-                        "Answer questions accurately using ONLY the provided document context. "
-                        "If the answer is not contained in the context, say so clearly. Use clean Markdown."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"Document Excerpt:\n{context}\n\nQuestion: {payload.question}"
-                }
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
             ],
             temperature=0.3,
             max_tokens=1024
