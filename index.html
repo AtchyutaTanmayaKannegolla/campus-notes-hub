@@ -1,973 +1,564 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campus Notes Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f8fafc;
-            color: #1e293b;
-            min-height: 100vh;
-            padding-bottom: 90px;
-        }
-
-        header {
-            background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 1.25rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .brand-title {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            font-size: 1.45rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .brand-title span.icon {
-            font-size: 1.4rem;
-        }
-
-        .btn {
-            background-color: #7c3aed;
-            color: white;
-            border: none;
-            padding: 0.55rem 1.15rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 0.88rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s;
-        }
-
-        .btn:hover {
-            background-color: #6d28d9;
-        }
-
-        .btn:disabled {
-            background-color: #a78bfa;
-            cursor: not-allowed;
-        }
-
-        .btn-outline {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-        }
-
-        .btn-outline:hover {
-            background: #f1f5f9;
-            color: #0f172a;
-        }
-
-        .btn-delete {
-            background: #ffffff;
-            color: #ef4444;
-            border: 1px solid #fee2e2;
-        }
-
-        .btn-delete:hover {
-            background: #fef2f2;
-            border-color: #fca5a5;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-        }
-
-        .search-row {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .search-input {
-            flex: 1;
-            min-width: 260px;
-            padding: 0.65rem 1rem;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            outline: none;
-            font-size: 0.9rem;
-            background: #ffffff;
-            color: #1e293b;
-        }
-
-        .search-input:focus {
-            border-color: #7c3aed;
-        }
-
-        .sem-select {
-            padding: 0.65rem 1rem;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            outline: none;
-            background: #ffffff;
-            color: #334155;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .notes-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .note-card {
-            background: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .card-badges {
-            display: flex;
-            gap: 0.4rem;
-        }
-
-        .badge-blue {
-            background: #e0e7ff;
-            color: #4338ca;
-            padding: 0.15rem 0.55rem;
-            border-radius: 4px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        .badge-yellow {
-            background: #fef3c7;
-            color: #b45309;
-            padding: 0.15rem 0.55rem;
-            border-radius: 4px;
-            font-size: 0.72rem;
-            font-weight: 700;
-        }
-
-        .card-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #0f172a;
-            word-break: break-word;
-        }
-
-        .card-subject {
-            color: #64748b;
-            font-size: 0.85rem;
-            margin-top: -0.35rem;
-        }
-
-        .btn-ai-card {
-            background: #f5f3ff;
-            color: #7c3aed;
-            border: 1px solid #ddd6fe;
-            padding: 0.55rem;
-            border-radius: 6px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            transition: background 0.15s;
-        }
-
-        .btn-ai-card:hover {
-            background: #ede9fe;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.35rem;
-        }
-
-        .card-actions .btn {
-            flex: 1;
-        }
-
-        .studybot-launcher {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background: #7c3aed;
-            color: #ffffff;
-            border: none;
-            padding: 0.75rem 1.4rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            z-index: 50;
-        }
-
-        .studybot-launcher:hover {
-            background: #6d28d9;
-        }
-
-        .studybot-window {
-            position: fixed;
-            bottom: 80px;
-            right: 25px;
-            width: 420px;
-            height: 540px;
-            background: #ffffff;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-            z-index: 60;
-        }
-
-        .studybot-header {
-            background: #7c3aed;
-            color: #ffffff;
-            padding: 0.85rem 1.15rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .studybot-header button {
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 1.25rem;
-            cursor: pointer;
-            line-height: 1;
-        }
-
-        .chat-body {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            background: #ffffff;
-            font-size: 0.86rem;
-        }
-
-        .bubble {
-            padding: 0.65rem 0.9rem;
-            border-radius: 8px;
-            max-width: 88%;
-            line-height: 1.45;
-            word-break: break-word;
-        }
-
-        .bubble.user {
-            background: #7c3aed;
-            color: white;
-            align-self: flex-end;
-        }
-
-        .bubble.bot {
-            background: #f8fafc;
-            color: #0f172a;
-            border: 1px solid #e2e8f0;
-            align-self: flex-start;
-        }
-
-        .bubble.bot table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 0.5rem 0;
-            font-size: 0.8rem;
-        }
-
-        .bubble.bot th, .bubble.bot td {
-            border: 1px solid #cbd5e1;
-            padding: 0.4rem 0.5rem;
-            text-align: left;
-        }
-
-        .bubble.bot th {
-            background: #f1f5f9;
-            font-weight: 600;
-        }
-
-        .bubble.bot ul, .bubble.bot ol {
-            padding-left: 1.25rem;
-            margin: 0.35rem 0;
-        }
-
-        .bubble.bot p {
-            margin-bottom: 0.4rem;
-        }
-
-        .chat-footer {
-            padding: 0.65rem 0.85rem;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            gap: 0.5rem;
-            background: #ffffff;
-            align-items: center;
-        }
-
-        .chat-footer input[type="text"] {
-            flex: 1;
-            padding: 0.55rem 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            outline: none;
-            font-size: 0.86rem;
-        }
-
-        .chat-footer input[type="text"]:focus {
-            border-color: #7c3aed;
-        }
-
-        .btn-attach {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 0.45rem 0.65rem;
-            cursor: pointer;
-            font-size: 0.95rem;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-attach:hover {
-            background: #e2e8f0;
-        }
-
-        .attachment-preview {
-            display: none;
-            padding: 0.35rem 0.85rem;
-            background: #f1f5f9;
-            border-top: 1px solid #e2e8f0;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .attachment-preview span {
-            font-size: 0.75rem;
-            color: #4338ca;
-            font-weight: 600;
-            text-overflow: ellipsis;
-            overflow: hidden;
-            white-space: nowrap;
-            max-width: 280px;
-        }
-
-        .attachment-preview button {
-            background: none;
-            border: none;
-            color: #ef4444;
-            font-size: 1.1rem;
-            cursor: pointer;
-            line-height: 1;
-        }
-
-        .modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(15, 23, 42, 0.45);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            padding: 1rem;
-        }
-
-        .modal-box {
-            background: #ffffff;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 500px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .modal-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-head h2 {
-            font-size: 1.15rem;
-            color: #0f172a;
-        }
-
-        .modal-head button {
-            background: none;
-            border: none;
-            font-size: 1.4rem;
-            cursor: pointer;
-            color: #64748b;
-        }
-
-        .form-field {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-        }
-
-        .form-field label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #334155;
-        }
-
-        .form-field input, .form-field select {
-            padding: 0.6rem;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            outline: none;
-            font-size: 0.88rem;
-        }
-
-        .doc-modal-content {
-            max-width: 650px;
-            height: 580px;
-        }
-
-        .doc-history {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            background: #fafafa;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campus Notes Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .markdown-body ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 0.5rem; }
+    .markdown-body ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 0.5rem; }
+    .markdown-body p { margin-bottom: 0.5rem; }
+    .markdown-body code { background-color: #f3f4f6; padding: 0.15rem 0.3rem; border-radius: 0.25rem; font-family: monospace; }
+    .markdown-body pre { background-color: #1f2937; color: #f9fafb; padding: 0.75rem; border-radius: 0.375rem; overflow-x: auto; margin-bottom: 0.5rem; }
+    .markdown-body pre code { background-color: transparent; color: inherit; padding: 0; }
+  </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col font-sans">
 
-    <header>
-        <div class="brand-title">
-            <span class="icon">📑</span>
-            <span>Campus Notes Hub</span>
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-book-bookmark text-2xl text-indigo-600"></i>
+        <h1 class="text-xl font-bold tracking-tight text-gray-900">Campus Notes Hub</h1>
+      </div>
+      <button onclick="openUploadModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow-sm transition">
+        <i class="fa-solid fa-plus mr-2"></i> Upload Material
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <!-- Filter Bar -->
+    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+      <div class="relative flex-grow">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+        <input type="text" id="searchInput" oninput="renderNotes()" placeholder="Search by title or subject..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+      </div>
+      <select id="semesterFilter" onchange="renderNotes()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white sm:w-48">
+        <option value="">All Semesters</option>
+        <option value="1">Semester 1</option>
+        <option value="2">Semester 2</option>
+        <option value="3">Semester 3</option>
+        <option value="4">Semester 4</option>
+        <option value="5">Semester 5</option>
+        <option value="6">Semester 6</option>
+        <option value="7">Semester 7</option>
+        <option value="8">Semester 8</option>
+      </select>
+    </div>
+
+    <!-- Notes Grid -->
+    <div id="notesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Injected via JavaScript -->
+    </div>
+  </main>
+
+  <!-- Floating StudyBot Launcher -->
+  <button onclick="openStudyBotModal()" class="fixed bottom-6 right-6 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center space-x-2 z-40 transition cursor-pointer">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span class="font-medium text-sm">Ask StudyBot</span>
+  </button>
+
+  <!-- Doc AI Modal -->
+  <div id="docModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+        <div>
+          <h3 id="docModalTitle" class="text-lg font-bold text-gray-900">AI: Document Assistant</h3>
+          <p id="docModalSubtitle" class="text-xs text-gray-500">Ask questions directly from notes or paste a screenshot</p>
         </div>
-        <button class="btn" onclick="openUploadModal()">+ Upload Material</button>
-    </header>
+        <button onclick="closeDocModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
+      </div>
 
-    <div class="container">
-        <div class="search-row">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search by title or subject..." oninput="filterNotes()">
-            <select id="semFilter" class="sem-select" onchange="filterNotes()">
-                <option value="ALL">All Semesters</option>
-                <option value="SEM 1">Semester 1</option>
-                <option value="SEM 2">Semester 2</option>
-                <option value="SEM 3">Semester 3</option>
-                <option value="SEM 4">Semester 4</option>
-                <option value="SEM 5">Semester 5</option>
-                <option value="SEM 6">Semester 6</option>
-                <option value="SEM 7">Semester 7</option>
-                <option value="SEM 8">Semester 8</option>
+      <!-- Messages Area -->
+      <div id="docChatMessages" class="flex-grow overflow-y-auto p-6 space-y-4 text-sm"></div>
+
+      <!-- Screenshot Preview Area -->
+      <div id="docImagePreviewBox" class="hidden px-6 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <img id="docImagePreview" class="h-12 w-12 object-cover rounded border border-indigo-200" src="" alt="Screenshot Preview">
+          <span class="text-xs font-semibold text-indigo-800">Screenshot attached (Ctrl+V)</span>
+        </div>
+        <button type="button" onclick="clearDocImage()" class="text-xs text-red-600 hover:text-red-800 font-bold px-2 py-1 bg-white rounded border border-red-200">Remove</button>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="p-4 border-t border-gray-200 bg-white">
+        <form onsubmit="handleDocChatSubmit(event)" class="flex items-center space-x-2">
+          <label class="p-2 text-gray-500 hover:text-indigo-600 rounded-lg hover:bg-gray-100 cursor-pointer" title="Attach Image">
+            <i class="fa-solid fa-camera text-lg"></i>
+            <input type="file" id="docFileInput" accept="image/*" class="hidden" onchange="handleDocFileSelect(event)">
+          </label>
+          <input type="text" id="docChatInput" placeholder="Ask question or paste screenshot (Ctrl+V)..." class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+          <button type="submit" id="docSendBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">Ask</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- StudyBot General Chat Modal -->
+  <div id="studyBotModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-graduation-cap text-indigo-600 text-lg"></i>
+          <h3 class="text-lg font-bold text-gray-900">Campus StudyBot</h3>
+        </div>
+        <button onclick="closeStudyBotModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">&times;</button>
+      </div>
+
+      <div id="studyBotMessages" class="flex-grow overflow-y-auto p-6 space-y-4 text-sm"></div>
+
+      <div id="studyBotImagePreviewBox" class="hidden px-6 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <img id="studyBotImagePreview" class="h-12 w-12 object-cover rounded border border-indigo-200" src="" alt="Screenshot Preview">
+          <span class="text-xs font-semibold text-indigo-800">Screenshot attached (Ctrl+V)</span>
+        </div>
+        <button type="button" onclick="clearStudyBotImage()" class="text-xs text-red-600 hover:text-red-800 font-bold px-2 py-1 bg-white rounded border border-red-200">Remove</button>
+      </div>
+
+      <div class="p-4 border-t border-gray-200 bg-white">
+        <form onsubmit="handleStudyBotSubmit(event)" class="flex items-center space-x-2">
+          <label class="p-2 text-gray-500 hover:text-indigo-600 rounded-lg hover:bg-gray-100 cursor-pointer" title="Attach Image">
+            <i class="fa-solid fa-camera text-lg"></i>
+            <input type="file" id="studyBotFileInput" accept="image/*" class="hidden" onchange="handleStudyBotFileSelect(event)">
+          </label>
+          <input type="text" id="studyBotInput" placeholder="Ask StudyBot or paste diagram (Ctrl+V)..." class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+          <button type="submit" id="studyBotSendBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">Ask</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Note Modal -->
+  <div id="uploadModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4 border-b pb-3">
+        <h3 class="text-lg font-bold text-gray-900">Upload Academic Material</h3>
+        <button onclick="closeUploadModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+      </div>
+      <form onsubmit="handleUploadSubmit(event)" class="space-y-4 text-sm">
+        <div>
+          <label class="block font-medium text-gray-700 mb-1">Title</label>
+          <input type="text" id="uploadTitle" required placeholder="e.g., unit 1" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-medium text-gray-700 mb-1">Subject</label>
+          <input type="text" id="uploadSubject" required placeholder="e.g., DWDM" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-gray-700 mb-1">Semester</label>
+            <input type="text" id="uploadSemester" required placeholder="e.g., 5" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-1">Category</label>
+            <select id="uploadCategory" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="Notes">Notes</option>
+              <option value="Question Bank">Question Bank</option>
+              <option value="Syllabus">Syllabus</option>
+              <option value="Lab Manual">Lab Manual</option>
             </select>
+          </div>
         </div>
-
-        <div id="notesContainer" class="notes-grid"></div>
+        <div>
+          <label class="block font-medium text-gray-700 mb-1">PDF File</label>
+          <input type="file" id="uploadFile" accept="application/pdf" required class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        </div>
+        <div>
+          <label class="block font-medium text-gray-700 mb-1">Admin Passkey</label>
+          <input type="password" id="uploadAdminKey" required placeholder="Enter upload passkey" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeUploadModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">Cancel</button>
+          <button type="submit" id="uploadSubmitBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition">Upload Note</button>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <!-- Upload Modal -->
-    <div id="uploadModal" class="modal-backdrop">
-        <div class="modal-box">
-            <div class="modal-head">
-                <h2>Upload Academic Note</h2>
-                <button onclick="closeUploadModal()">&times;</button>
+  <script>
+    let allNotes = [];
+    let currentNoteId = null;
+    let docImageBase64 = null;
+    let studyBotImageBase64 = null;
+
+    // Retry state store
+    let lastDocRequest = null;
+    let lastStudyBotRequest = null;
+
+    // Fetch and initialize notes on load
+    window.addEventListener("DOMContentLoaded", fetchNotes);
+
+    async function fetchNotes() {
+      try {
+        const res = await fetch("/api/notes");
+        allNotes = await res.json();
+        renderNotes();
+      } catch (err) {
+        console.error("Failed to fetch notes:", err);
+      }
+    }
+
+    function renderNotes() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const sem = document.getElementById("semesterFilter").value;
+      const grid = document.getElementById("notesGrid");
+      grid.innerHTML = "";
+
+      const filtered = allNotes.filter(n => {
+        const matchesSearch = (n.title || "").toLowerCase().includes(search) || (n.subject || "").toLowerCase().includes(search);
+        const matchesSem = !sem || String(n.semester).includes(sem);
+        return matchesSearch && matchesSem;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400">No notes found matching your criteria.</div>`;
+        return;
+      }
+
+      filtered.forEach(note => {
+        const card = document.createElement("div");
+        card.className = "bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full">${note.category || 'Notes'}</span>
+              <span class="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded">Sem ${note.semester}</span>
             </div>
-            <form id="uploadForm" onsubmit="handleUpload(event)">
-                <div class="form-field">
-                    <label>Resource Title</label>
-                    <input type="text" id="uploadTitle" required placeholder="e.g. ALL UNITS QUESTIONS">
-                </div>
-                <div class="form-field">
-                    <label>Subject</label>
-                    <input type="text" id="uploadSubject" required placeholder="e.g. CN">
-                </div>
-                <div class="form-field">
-                    <label>Semester</label>
-                    <select id="uploadSemester" required>
-                        <option value="SEM 1">Semester 1</option>
-                        <option value="SEM 2">Semester 2</option>
-                        <option value="SEM 3">Semester 3</option>
-                        <option value="SEM 4">Semester 4</option>
-                        <option value="SEM 5">Semester 5</option>
-                        <option value="SEM 6">Semester 6</option>
-                        <option value="SEM 7">Semester 7</option>
-                        <option value="SEM 8">Semester 8</option>
-                    </select>
-                </div>
-                <div class="form-field">
-                    <label>Category</label>
-                    <select id="uploadCategory" required>
-                        <option value="NOTES">NOTES</option>
-                        <option value="PYQ">PYQ</option>
-                        <option value="SYLLABUS">SYLLABUS</option>
-                    </select>
-                </div>
-                <div class="form-field">
-                    <label>PDF Document</label>
-                    <input type="file" id="uploadFile" accept=".pdf" required>
-                </div>
-                <div class="form-field">
-                    <label>Contributor Passkey</label>
-                    <input type="password" id="uploadPasskey" placeholder="Enter passkey to upload" required>
-                </div>
-                <button type="submit" class="btn" style="width: 100%; margin-top: 0.5rem;">Upload Document</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Doc AI Modal with Camera & Screenshot Paste Support -->
-    <div id="docAiModal" class="modal-backdrop">
-        <div class="modal-box doc-modal-content">
-            <div class="modal-head">
-                <h2 id="docAiTitle">Ask AI About This PDF</h2>
-                <button onclick="closeDocAiModal()">&times;</button>
+            <h4 class="text-base font-bold text-gray-900">${note.title}</h4>
+            <p class="text-xs text-gray-500 mb-4">${note.subject}</p>
+          </div>
+          <div class="pt-4 border-t border-gray-100 space-y-2">
+            <button onclick="openDocModal(${note.id}, '${note.title.replace(/'/g, "\\'")}')" class="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg flex items-center justify-center space-x-2 transition">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Ask AI About This Note</span>
+            </button>
+            <div class="flex items-center space-x-2">
+              <a href="/api/notes/${note.id}/download" target="_blank" class="flex-grow py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg text-center transition">
+                Download
+              </a>
+              <button onclick="promptDeleteNote(${note.id})" class="p-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs transition" title="Delete Note">
+                <i class="fa-solid fa-trash"></i>
+              </button>
             </div>
-            <div id="docHistory" class="doc-history"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
 
-            <div id="docImagePreviewContainer" class="attachment-preview">
-                <span id="docImagePreviewName"></span>
-                <button type="button" onclick="clearSelectedDocImage()">&times;</button>
-            </div>
+    // Modal Toggles
+    function openUploadModal() { document.getElementById("uploadModal").classList.remove("hidden"); }
+    function closeUploadModal() { document.getElementById("uploadModal").classList.add("hidden"); }
 
-            <div class="chat-footer">
-                <input type="file" id="docImageInput" accept="image/*" style="display: none;" onchange="handleDocImageSelect(event)">
-                <button type="button" class="btn-attach" onclick="document.getElementById('docImageInput').click()" title="Attach or Paste Screenshot">📷</button>
-                <input type="text" id="docInput" placeholder="Ask question or paste screenshot (Ctrl+V)..." onkeydown="if(event.key==='Enter') sendDocMessage()">
-                <button class="btn" onclick="sendDocMessage()">Ask</button>
-            </div>
-        </div>
-    </div>
+    function openStudyBotModal() {
+      document.getElementById("studyBotModal").classList.remove("hidden");
+      const box = document.getElementById("studyBotMessages");
+      if (box.children.length === 0) {
+        box.innerHTML = `<div class="p-3 bg-gray-100 rounded-lg text-gray-700 text-xs">Hi! I'm Campus StudyBot. Ask me any engineering concept or paste a diagram (Ctrl+V)!</div>`;
+      }
+    }
+    function closeStudyBotModal() { document.getElementById("studyBotModal").classList.add("hidden"); }
 
-    <!-- StudyBot Window with Camera & Screenshot Paste Support -->
-    <div id="studyBotWindow" class="studybot-window">
-        <div class="studybot-header">
-            <span>Campus StudyBot</span>
-            <button onclick="toggleStudyBot()">&times;</button>
-        </div>
-        <div id="botHistory" class="chat-body">
-            <div class="bubble bot">Hi! I'm Campus StudyBot. Ask me questions, click 📷, or press <strong>Ctrl+V</strong> to paste a screenshot!</div>
-        </div>
+    function openDocModal(noteId, title) {
+      currentNoteId = noteId;
+      document.getElementById("docModalTitle").innerText = `AI: ${title}`;
+      const box = document.getElementById("docChatMessages");
+      box.innerHTML = `<div class="p-3 bg-gray-100 rounded-lg text-gray-700 text-xs">Ask questions directly about <strong>${title}</strong>, or paste a screenshot (Ctrl+V)!</div>`;
+      clearDocImage();
+      document.getElementById("docModal").classList.remove("hidden");
+    }
+    function closeDocModal() { document.getElementById("docModal").classList.add("hidden"); }
 
-        <div id="imagePreviewContainer" class="attachment-preview">
-            <span id="imagePreviewName"></span>
-            <button type="button" onclick="clearSelectedImage()">&times;</button>
-        </div>
+    // Upload Handler
+    async function handleUploadSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById("uploadSubmitBtn");
+      btn.disabled = true;
+      btn.innerText = "Uploading...";
 
-        <div class="chat-footer">
-            <input type="file" id="botImageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
-            <button type="button" class="btn-attach" onclick="document.getElementById('botImageInput').click()" title="Attach or Paste Screenshot">📷</button>
-            <input type="text" id="botInput" placeholder="Ask or paste screenshot (Ctrl+V)..." onkeydown="if(event.key==='Enter') sendBotMessage()">
-            <button class="btn" onclick="sendBotMessage()">Send</button>
-        </div>
-    </div>
+      const formData = new FormData();
+      formData.append("title", document.getElementById("uploadTitle").value.trim());
+      formData.append("subject", document.getElementById("uploadSubject").value.trim());
+      formData.append("semester", document.getElementById("uploadSemester").value.trim());
+      formData.append("category", document.getElementById("uploadCategory").value);
+      formData.append("file", document.getElementById("uploadFile").files[0]);
+      formData.append("admin_key", document.getElementById("uploadAdminKey").value.trim());
 
-    <button class="studybot-launcher" onclick="toggleStudyBot()">✨ Ask StudyBot</button>
+      try {
+        const res = await fetch("/api/notes/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Upload failed");
+        closeUploadModal();
+        fetchNotes();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Upload Note";
+      }
+    }
 
-    <script>
-        let allNotes = [];
-        let activeDocId = null;
-        let attachedImageBase64 = null;
-        let attachedDocImageBase64 = null;
+    // Delete Handler
+    async function promptDeleteNote(noteId) {
+      const passkey = prompt("Enter Admin Passkey to delete this note:");
+      if (!passkey) return;
 
-        document.addEventListener("DOMContentLoaded", fetchNotes);
+      try {
+        const res = await fetch(`/api/notes/${noteId}`, {
+          method: "DELETE",
+          headers: { "x-admin-key": passkey.trim() }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Deletion failed");
+        fetchNotes();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
 
-        // Global Paste Listener (Ctrl + V for Screenshots from Clipboard)
-        document.addEventListener("paste", function (e) {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf("image") !== -1) {
-                    const blob = items[i].getAsFile();
-                    const reader = new FileReader();
-
-                    reader.onload = function (event) {
-                        const docModal = document.getElementById("docAiModal");
-                        if (docModal && docModal.style.display === "flex") {
-                            attachedDocImageBase64 = event.target.result;
-                            document.getElementById("docImagePreviewName").innerText = "Pasted Screenshot Ready";
-                            document.getElementById("docImagePreviewContainer").style.display = "flex";
-                        } else {
-                            attachedImageBase64 = event.target.result;
-                            const win = document.getElementById("studyBotWindow");
-                            if (win.style.display !== "flex") {
-                                toggleStudyBot();
-                            }
-                            document.getElementById("imagePreviewName").innerText = "Pasted Screenshot Ready";
-                            document.getElementById("imagePreviewContainer").style.display = "flex";
-                        }
-                    };
-                    reader.readAsDataURL(blob);
-                }
+    // Clipboard Paste Listener (Ctrl+V)
+    window.addEventListener("paste", (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let item of items) {
+        if (item.type.indexOf("image") === 0) {
+          const blob = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target.result;
+            if (!document.getElementById("docModal").classList.contains("hidden")) {
+              setDocImage(base64);
+            } else if (!document.getElementById("studyBotModal").classList.contains("hidden")) {
+              setStudyBotImage(base64);
             }
+          };
+          reader.readAsDataURL(blob);
+        }
+      }
+    });
+
+    // Image Handlers
+    function handleDocFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => setDocImage(evt.target.result);
+      reader.readAsDataURL(file);
+    }
+    function setDocImage(base64) {
+      docImageBase64 = base64;
+      document.getElementById("docImagePreview").src = base64;
+      document.getElementById("docImagePreviewBox").classList.remove("hidden");
+    }
+    function clearDocImage() {
+      docImageBase64 = null;
+      document.getElementById("docFileInput").value = "";
+      document.getElementById("docImagePreview").src = "";
+      document.getElementById("docImagePreviewBox").classList.add("hidden");
+    }
+
+    function handleStudyBotFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => setStudyBotImage(evt.target.result);
+      reader.readAsDataURL(file);
+    }
+    function setStudyBotImage(base64) {
+      studyBotImageBase64 = base64;
+      document.getElementById("studyBotImagePreview").src = base64;
+      document.getElementById("studyBotImagePreviewBox").classList.remove("hidden");
+    }
+    function clearStudyBotImage() {
+      studyBotImageBase64 = null;
+      document.getElementById("studyBotFileInput").value = "";
+      document.getElementById("studyBotImagePreview").src = "";
+      document.getElementById("studyBotImagePreviewBox").classList.add("hidden");
+    }
+
+    // ==========================================
+    // DOC CHAT WITH RETRY LOGIC
+    // ==========================================
+    async function handleDocChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById("docChatInput");
+      const text = input.value.trim();
+      const image = docImageBase64;
+
+      if (!text && !image) return;
+
+      // Save for retry
+      lastDocRequest = { noteId: currentNoteId, question: text, image_base64: image };
+
+      // Render user bubble
+      appendMessage("docChatMessages", "user", text, image);
+
+      // Clear input and attachment
+      input.value = "";
+      clearDocImage();
+
+      executeDocChat();
+    }
+
+    async function executeDocChat() {
+      const box = document.getElementById("docChatMessages");
+      const btn = document.getElementById("docSendBtn");
+      btn.disabled = true;
+
+      // Remove existing retry boxes if retrying
+      const existingError = box.querySelector(".error-retry-card");
+      if (existingError) existingError.remove();
+
+      // Show loader
+      const loader = document.createElement("div");
+      loader.id = "docLoader";
+      loader.className = "p-3 bg-gray-100 rounded-lg text-xs text-gray-500 animate-pulse";
+      loader.innerText = "Analyzing PDF & screenshot...";
+      box.appendChild(loader);
+      box.scrollTop = box.scrollHeight;
+
+      try {
+        const res = await fetch("/api/ai/doc-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            note_id: lastDocRequest.noteId,
+            question: lastDocRequest.question,
+            image_base64: lastDocRequest.image_base64
+          })
         });
 
-        async function fetchNotes() {
-            try {
-                const res = await fetch("/api/notes");
-                allNotes = await res.json();
-                renderNotes(allNotes);
-            } catch (err) {
-                console.error("Failed to load notes:", err);
-            }
+        const data = await res.json();
+        loader.remove();
+
+        if (!res.ok) throw new Error(data.detail || "Server error");
+        appendMessage("docChatMessages", "ai", data.response);
+
+      } catch (err) {
+        loader.remove();
+        renderRetryCard("docChatMessages", err.message, "executeDocChat()");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ==========================================
+    // STUDYBOT CHAT WITH RETRY LOGIC
+    // ==========================================
+    async function handleStudyBotSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById("studyBotInput");
+      const text = input.value.trim();
+      const image = studyBotImageBase64;
+
+      if (!text && !image) return;
+
+      lastStudyBotRequest = { message: text, image_base64: image };
+
+      appendMessage("studyBotMessages", "user", text, image);
+      input.value = "";
+      clearStudyBotImage();
+
+      executeStudyBotChat();
+    }
+
+    async function executeStudyBotChat() {
+      const box = document.getElementById("studyBotMessages");
+      const btn = document.getElementById("studyBotSendBtn");
+      btn.disabled = true;
+
+      const existingError = box.querySelector(".error-retry-card");
+      if (existingError) existingError.remove();
+
+      const loader = document.createElement("div");
+      loader.id = "studyBotLoader";
+      loader.className = "p-3 bg-gray-100 rounded-lg text-xs text-gray-500 animate-pulse";
+      loader.innerText = "StudyBot is thinking...";
+      box.appendChild(loader);
+      box.scrollTop = box.scrollHeight;
+
+      try {
+        const res = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: lastStudyBotRequest.message,
+            image_base64: lastStudyBotRequest.image_base64
+          })
+        });
+
+        const data = await res.json();
+        loader.remove();
+
+        if (!res.ok) throw new Error(data.detail || "Server error");
+        appendMessage("studyBotMessages", "ai", data.response);
+
+      } catch (err) {
+        loader.remove();
+        renderRetryCard("studyBotMessages", err.message, "executeStudyBotChat()");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Append Message UI
+    function appendMessage(containerId, sender, text, image) {
+      const box = document.getElementById(containerId);
+      const msgDiv = document.createElement("div");
+      msgDiv.className = sender === "user" ? "flex justify-end" : "flex justify-start";
+
+      const bubble = document.createElement("div");
+      bubble.className = sender === "user"
+        ? "max-w-[85%] bg-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-2.5 shadow-sm space-y-2 text-xs leading-relaxed"
+        : "max-w-[90%] bg-gray-100 text-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm text-xs markdown-body leading-relaxed";
+
+      if (image) {
+        const img = document.createElement("img");
+        img.src = image;
+        img.className = "max-h-48 rounded-lg border border-white/20 mb-2 object-cover";
+        bubble.appendChild(img);
+      }
+
+      if (text) {
+        if (sender === "user") {
+          const p = document.createElement("p");
+          p.innerText = text;
+          bubble.appendChild(p);
+        } else {
+          bubble.innerHTML += marked.parse(text);
         }
+      }
 
-        function renderNotes(notes) {
-            const container = document.getElementById("notesContainer");
-            container.innerHTML = "";
+      msgDiv.appendChild(bubble);
+      box.appendChild(msgDiv);
+      box.scrollTop = box.scrollHeight;
+    }
 
-            if (!notes || notes.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 3rem;">No notes available. Click '+ Upload Material' to add one.</div>`;
-                return;
-            }
-
-            notes.forEach(note => {
-                const card = document.createElement("div");
-                card.className = "note-card";
-                card.innerHTML = `
-                    <div class="card-badges">
-                        <span class="badge-blue">${escapeHtml(note.category)}</span>
-                        <span class="badge-yellow">${escapeHtml(note.semester)}</span>
-                    </div>
-                    <div class="card-title">${escapeHtml(note.title)}</div>
-                    <div class="card-subject">${escapeHtml(note.subject)}</div>
-                    <button class="btn-ai-card" onclick="openDocAiModal(${note.id}, '${escapeHtml(note.title)}')">✨ Ask AI About This PDF</button>
-                    <div class="card-actions">
-                        <a href="/api/notes/${note.id}/download" target="_blank" class="btn btn-outline">Download</a>
-                        <button class="btn btn-delete" onclick="deleteNote(${note.id})">Delete</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function filterNotes() {
-            const query = document.getElementById("searchInput").value.toLowerCase().trim();
-            const sem = document.getElementById("semFilter").value;
-
-            const filtered = allNotes.filter(n => {
-                const matches = n.title.toLowerCase().includes(query) || n.subject.toLowerCase().includes(query);
-                
-                if (sem === "ALL") return matches;
-
-                const selectedNum = sem.replace(/\D/g, "");
-                const noteSemNum = String(n.semester).replace(/\D/g, "");
-
-                const matchesSem = (n.semester === sem) || 
-                                   (selectedNum && noteSemNum && selectedNum === noteSemNum);
-
-                return matches && matchesSem;
-            });
-
-            renderNotes(filtered);
-        }
-
-        async function deleteNote(noteId) {
-            const adminKey = prompt("Enter the Contributor Passkey to delete this note:");
-            if (!adminKey) return;
-
-            try {
-                const response = await fetch(`/api/notes/${noteId}`, {
-                    method: "DELETE",
-                    headers: {
-                        "x-admin-key": adminKey.trim()
-                    }
-                });
-
-                if (response.status === 401) {
-                    alert("Unauthorized: Incorrect passkey.");
-                    return;
-                }
-
-                if (!response.ok) {
-                    const err = await response.json().catch(() => null);
-                    alert((err && err.detail) || "Failed to delete note.");
-                    return;
-                }
-
-                alert("Note deleted successfully.");
-                fetchNotes();
-            } catch (err) {
-                console.error("Delete error:", err);
-                alert("An error occurred during deletion.");
-            }
-        }
-
-        // Upload Handlers
-        function openUploadModal() {
-            document.getElementById("uploadModal").style.display = "flex";
-        }
-        function closeUploadModal() {
-            document.getElementById("uploadModal").style.display = "none";
-            document.getElementById("uploadForm").reset();
-        }
-
-        async function handleUpload(e) {
-            e.preventDefault();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Uploading...";
-
-            const formData = new FormData();
-            formData.append("title", document.getElementById("uploadTitle").value.trim());
-            formData.append("subject", document.getElementById("uploadSubject").value.trim());
-            formData.append("semester", document.getElementById("uploadSemester").value);
-            formData.append("category", document.getElementById("uploadCategory").value);
-            formData.append("file", document.getElementById("uploadFile").files[0]);
-            formData.append("admin_key", document.getElementById("uploadPasskey").value.trim());
-
-            try {
-                const res = await fetch("/api/notes/upload", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await res.json().catch(() => null);
-
-                if (res.status === 401) {
-                    alert("Unauthorized: " + (data?.detail || "Invalid passkey. Check for extra spaces."));
-                    return;
-                }
-
-                if (!res.ok) {
-                    alert("Upload failed: " + (data?.detail || ("Status " + res.status)));
-                    return;
-                }
-
-                alert("Upload completed successfully!");
-                closeUploadModal();
-                fetchNotes();
-            } catch (err) {
-                console.error(err);
-                alert("Upload error: " + err.message);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Upload Document";
-            }
-        }
-
-        // Doc AI Handlers
-        function openDocAiModal(noteId, title) {
-            activeDocId = noteId;
-            clearSelectedDocImage();
-            document.getElementById("docAiTitle").innerText = `AI: ${title}`;
-            document.getElementById("docHistory").innerHTML = `
-                <div class="bubble bot">Ask questions directly about <strong>${title}</strong>, or paste a screenshot (Ctrl+V)!</div>
-            `;
-            document.getElementById("docAiModal").style.display = "flex";
-        }
-
-        function closeDocAiModal() {
-            document.getElementById("docAiModal").style.display = "none";
-            activeDocId = null;
-            clearSelectedDocImage();
-        }
-
-        function handleDocImageSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                attachedDocImageBase64 = e.target.result;
-                document.getElementById("docImagePreviewName").innerText = "Attached: " + file.name;
-                document.getElementById("docImagePreviewContainer").style.display = "flex";
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function clearSelectedDocImage() {
-            attachedDocImageBase64 = null;
-            const input = document.getElementById("docImageInput");
-            if (input) input.value = "";
-            const prev = document.getElementById("docImagePreviewContainer");
-            if (prev) prev.style.display = "none";
-        }
-
-        async function sendDocMessage() {
-            const input = document.getElementById("docInput");
-            const q = input.value.trim();
-            if (!q && !attachedDocImageBase64) return;
-            if (!activeDocId) return;
-
-            const history = document.getElementById("docHistory");
-
-            let userHtml = "";
-            if (attachedDocImageBase64) {
-                userHtml += `<img src="${attachedDocImageBase64}" style="max-width: 100%; max-height: 140px; border-radius: 6px; display: block; margin-bottom: 0.4rem; border: 1px solid rgba(255,255,255,0.3);">`;
-            }
-            if (q) {
-                userHtml += `<div>${escapeHtml(q)}</div>`;
-            }
-
-            history.innerHTML += `<div class="bubble user">${userHtml}</div>`;
-
-            const sentImage = attachedDocImageBase64;
-            const sentText = q;
-
-            input.value = "";
-            clearSelectedDocImage();
-
-            const loading = document.createElement("div");
-            loading.className = "bubble bot";
-            loading.innerHTML = "<em>Analyzing PDF & screenshot...</em>";
-            history.appendChild(loading);
-            history.scrollTop = history.scrollHeight;
-
-            try {
-                const res = await fetch("/api/ai/doc-chat", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ 
-                        note_id: activeDocId, 
-                        question: sentText || "Please explain or solve what is shown in this image.",
-                        image_base64: sentImage 
-                    })
-                });
-
-                if (!res.ok) {
-                    const err = await res.json().catch(() => null);
-                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml((err && err.detail) || "Failed to process PDF.")}</span>`;
-                    return;
-                }
-
-                const data = await res.json();
-                loading.innerHTML = marked.parse(data.response || "No response received.");
-            } catch (err) {
-                loading.innerHTML = `<span style="color: #ef4444;">Network error. Please try again.</span>`;
-            }
-            history.scrollTop = history.scrollHeight;
-        }
-
-        // Campus StudyBot Handlers
-        function toggleStudyBot() {
-            const win = document.getElementById("studyBotWindow");
-            win.style.display = (win.style.display === "flex") ? "none" : "flex";
-        }
-
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                attachedImageBase64 = e.target.result;
-                document.getElementById("imagePreviewName").innerText = "Attached: " + file.name;
-                document.getElementById("imagePreviewContainer").style.display = "flex";
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function clearSelectedImage() {
-            attachedImageBase64 = null;
-            const input = document.getElementById("botImageInput");
-            if (input) input.value = "";
-            const prev = document.getElementById("imagePreviewContainer");
-            if (prev) prev.style.display = "none";
-        }
-
-        async function sendBotMessage() {
-            const input = document.getElementById("botInput");
-            const q = input.value.trim();
-            if (!q && !attachedImageBase64) return;
-
-            const history = document.getElementById("botHistory");
-            
-            let userHtml = "";
-            if (attachedImageBase64) {
-                userHtml += `<img src="${attachedImageBase64}" style="max-width: 100%; max-height: 140px; border-radius: 6px; display: block; margin-bottom: 0.4rem; border: 1px solid rgba(255,255,255,0.3);">`;
-            }
-            if (q) {
-                userHtml += `<div>${escapeHtml(q)}</div>`;
-            }
-            
-            history.innerHTML += `<div class="bubble user">${userHtml}</div>`;
-            
-            const sentImage = attachedImageBase64;
-            const sentText = q;
-
-            input.value = "";
-            clearSelectedImage();
-
-            const loading = document.createElement("div");
-            loading.className = "bubble bot";
-            loading.innerHTML = "<em>Analyzing image & thinking...</em>";
-            history.appendChild(loading);
-            history.scrollTop = history.scrollHeight;
-
-            try {
-                const res = await fetch("/api/ai/chat", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ 
-                        message: sentText || "Please explain or solve what is shown in this image.",
-                        image_base64: sentImage 
-                    })
-                });
-
-                if (!res.ok) {
-                    const err = await res.json().catch(() => null);
-                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml((err && err.detail) || "StudyBot failed to respond.")}</span>`;
-                    return;
-                }
-
-                const data = await res.json();
-                loading.innerHTML = marked.parse(data.response || "No response received.");
-            } catch (err) {
-                loading.innerHTML = `<span style="color: #ef4444;">Failed to communicate with StudyBot.</span>`;
-            }
-            history.scrollTop = history.scrollHeight;
-        }
-
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-    </script>
+    // Render Retry Card on Error
+    function renderRetryCard(containerId, errorMessage, retryFunctionCall) {
+      const box = document.getElementById(containerId);
+      const card = document.createElement("div");
+      card.className = "error-retry-card p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center justify-between gap-3 shadow-sm";
+      card.innerHTML = `
+        <div class="flex items-center space-x-2 overflow-hidden">
+          <i class="fa-solid fa-triangle-exclamation text-red-500 shrink-0"></i>
+          <span class="truncate"><strong>Failed:</strong> ${errorMessage}</span>
+        </div>
+        <button type="button" onclick="${retryFunctionCall}" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shrink-0 flex items-center space-x-1 transition shadow-sm">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Retry</span>
+        </button>
+      `;
+      box.appendChild(card);
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
 </body>
 </html>

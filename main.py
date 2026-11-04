@@ -29,7 +29,6 @@ groq_client = groq.Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# Text model on Groq
 TEXT_MODEL = "openai/gpt-oss-120b"
 
 app = FastAPI(title="Campus Notes Hub")
@@ -55,7 +54,7 @@ class DocChatRequest(BaseModel):
 
 
 def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
-    """Extracts base64 bytes and prompts Gemini Flash for multimodal analysis."""
+    """Extracts base64 bytes and prompts Gemini Flash for multimodal analysis with fallback."""
     if not GEMINI_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -70,15 +69,37 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
         mime_type = "image/png"
 
     image_bytes = base64.b64decode(b64_str)
-    
-    # gemini-2.5-flash or gemini-1.5-flash
-    model = genai.GenerativeModel("gemini-3.8-flash")
 
-    response = model.generate_content([
-        prompt,
-        {"mime_type": mime_type, "data": image_bytes}
-    ])
-    return response.text
+    # Models prioritized by high free quota (1,500 RPD) to avoid the 20 RPD cap
+    vision_candidates = [
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b",
+        "gemini-3.8-flash"
+    ]
+
+    last_error = None
+    for model_name in vision_candidates:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content([
+                prompt,
+                {"mime_type": mime_type, "data": image_bytes}
+            ])
+            return response.text
+        except Exception as e:
+            last_error = e
+            err_str = str(e)
+            # If hit by quota limit (429) or model missing (404), fall back to next model
+            if "429" in err_str or "404" in err_str or "quota" in err_str.lower():
+                continue
+            raise e
+
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=f"All available vision model quotas exhausted. Error: {last_error}"
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -113,7 +134,6 @@ async def upload_note(
     sanitized_filename = f"{os.urandom(6).hex()}_{file.filename.replace(' ', '_')}"
     filepath = f"uploads/{sanitized_filename}"
 
-    # Upload PDF to Supabase Storage bucket
     supabase.storage.from_("notes").upload(
         path=filepath,
         file=file_bytes,
@@ -122,7 +142,6 @@ async def upload_note(
 
     file_url = supabase.storage.from_("notes").get_public_url(filepath)
 
-    # Insert note metadata record
     insert_res = supabase.table("notes").insert({
         "title": title.strip(),
         "subject": subject.strip(),
@@ -168,7 +187,6 @@ async def download_note(note_id: int):
 
 @app.post("/api/ai/chat")
 async def study_bot_chat(payload: ChatRequest):
-    # Route image/screenshot queries directly to Gemini Vision
     if payload.image_base64:
         try:
             prompt = (
@@ -181,7 +199,6 @@ async def study_bot_chat(payload: ChatRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Image vision processing error: {str(e)}")
 
-    # Route pure text queries to Groq
     if not groq_client:
         raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
@@ -230,12 +247,10 @@ async def document_qa(payload: DocChatRequest):
             f"User Question/Prompt: {payload.question or 'Explain the attached screenshot in the context of this document.'}"
         )
 
-        # Route image/screenshot queries directly to Gemini Vision
         if payload.image_base64:
             result = analyze_image_with_gemini(doc_prompt, payload.image_base64)
             return {"response": result}
 
-        # Route pure text queries to Groq
         if not groq_client:
             raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
