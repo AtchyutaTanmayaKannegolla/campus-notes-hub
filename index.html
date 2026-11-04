@@ -65,6 +65,11 @@
             background-color: #6d28d9;
         }
 
+        .btn:disabled {
+            background-color: #a78bfa;
+            cursor: not-allowed;
+        }
+
         .btn-outline {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -136,7 +141,7 @@
             gap: 1.5rem;
         }
 
-        /* Note Card Matching Screenshot */
+        /* Note Card */
         .note-card {
             background: #ffffff;
             border-radius: 8px;
@@ -241,7 +246,7 @@
             background: #6d28d9;
         }
 
-        /* StudyBot Chat Window Matching Screenshot */
+        /* StudyBot Chat Window */
         .studybot-window {
             position: fixed;
             bottom: 80px;
@@ -310,7 +315,6 @@
             align-self: flex-start;
         }
 
-        /* Markdown tables in bot responses */
         .bubble.bot table {
             border-collapse: collapse;
             width: 100%;
@@ -359,7 +363,7 @@
             border-color: #7c3aed;
         }
 
-        /* Modal Overlays (Upload & Doc AI) */
+        /* Modal Overlays */
         .modal-backdrop {
             position: fixed;
             top: 0;
@@ -608,7 +612,7 @@
                 
                 if (sem === "ALL") return matches;
 
-                // Extract numbers to match formats like "5", "SEM 5", or "Semester 5"
+                // Match both "5" and "SEM 5" formats
                 const selectedNum = sem.replace(/\D/g, "");
                 const noteSemNum = String(n.semester).replace(/\D/g, "");
 
@@ -629,7 +633,7 @@
                 const response = await fetch(`/api/notes/${noteId}`, {
                     method: "DELETE",
                     headers: {
-                        "x-admin-key": adminKey
+                        "x-admin-key": adminKey.trim()
                     }
                 });
 
@@ -639,8 +643,8 @@
                 }
 
                 if (!response.ok) {
-                    const err = await response.json();
-                    alert(err.detail || "Failed to delete note.");
+                    const err = await response.json().catch(() => null);
+                    alert((err && err.detail) || "Failed to delete note.");
                     return;
                 }
 
@@ -663,13 +667,17 @@
 
         async function handleUpload(e) {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Uploading...";
+
             const formData = new FormData();
-            formData.append("title", document.getElementById("uploadTitle").value);
-            formData.append("subject", document.getElementById("uploadSubject").value);
+            formData.append("title", document.getElementById("uploadTitle").value.trim());
+            formData.append("subject", document.getElementById("uploadSubject").value.trim());
             formData.append("semester", document.getElementById("uploadSemester").value);
             formData.append("category", document.getElementById("uploadCategory").value);
             formData.append("file", document.getElementById("uploadFile").files[0]);
-            formData.append("admin_key", document.getElementById("uploadPasskey").value);
+            formData.append("admin_key", document.getElementById("uploadPasskey").value.trim());
 
             try {
                 const res = await fetch("/api/notes/upload", {
@@ -677,14 +685,15 @@
                     body: formData
                 });
 
+                const data = await res.json().catch(() => null);
+
                 if (res.status === 401) {
-                    alert("Unauthorized: Invalid contributor passkey.");
+                    alert("Unauthorized: " + (data?.detail || "Invalid passkey. Check for extra spaces."));
                     return;
                 }
 
                 if (!res.ok) {
-                    const err = await res.json();
-                    alert(err.detail || "Upload failed.");
+                    alert("Upload failed: " + (data?.detail || ("Status " + res.status)));
                     return;
                 }
 
@@ -693,7 +702,10 @@
                 fetchNotes();
             } catch (err) {
                 console.error(err);
-                alert("Upload failed. Please check connection.");
+                alert("Upload error: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Upload Document";
             }
         }
 
@@ -735,8 +747,8 @@
                 });
 
                 if (!res.ok) {
-                    const err = await res.json();
-                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml(err.detail || "Failed to process PDF.")}</span>`;
+                    const err = await res.json().catch(() => null);
+                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml((err && err.detail) || "Failed to process PDF.")}</span>`;
                     return;
                 }
 
@@ -777,8 +789,8 @@
                 });
 
                 if (!res.ok) {
-                    const err = await res.json();
-                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml(err.detail || "StudyBot failed to respond.")}</span>`;
+                    const err = await res.json().catch(() => null);
+                    loading.innerHTML = `<span style="color: #ef4444;">Error: ${escapeHtml((err && err.detail) || "StudyBot failed to respond.")}</span>`;
                     return;
                 }
 
