@@ -73,7 +73,13 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image decoding failed: {str(e)}")
 
-    models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite"]
+    # Standard production models supported across SDK versions
+    models_to_try = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-exp"
+    ]
     last_err = None
 
     # Rotate through keys across different projects
@@ -94,14 +100,15 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
                 err_str = str(e).lower()
                 print(f"Key {key_idx + 1} with {model_name} failed: {e}")
 
-                # If quota or rate-limit hit, move to the next key
+                # If quota/rate-limit hit, switch immediately to the next API key
                 if "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
                     break
+                # If model name returns 404 or transient issue, try next model in candidate list
                 continue
 
     raise HTTPException(
-        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail=f"All API key quotas exhausted. Last error: {str(last_err)}"
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"Vision inference error: {str(last_err)}"
     )
 
 
