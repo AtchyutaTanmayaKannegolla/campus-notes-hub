@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from supabase import create_client, Client
 import groq
 from pypdf import PdfReader
-import google.generativeai as genai
 
 load_dotenv()
 
@@ -54,7 +53,7 @@ class DocChatRequest(BaseModel):
 
 
 def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
-    """Rotates across configured Gemini API keys on quota limits (429)."""
+    """Sends vision requests directly via REST endpoint, compatible with AQ and AIzaSy keys."""
     if not GEMINI_KEY_POOL:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -68,43 +67,57 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
         else:
             b64_str = image_data_url
             mime_type = "image/png"
-
-        image_bytes = base64.b64decode(b64_str)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image decoding failed: {str(e)}")
 
-    # Standard production vision model supported by Google AI Studio keys
-    models_to_try = [
-        "gemini-1.5-flash"
-    ]
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": b64_str
+                    }
+                }
+            ]
+        }]
+    }
+
     last_err = None
 
-    # Rotate through keys across different projects
+    # Rotate through API keys
     for key_idx, api_key in enumerate(GEMINI_KEY_POOL):
-        genai.configure(api_key=api_key)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
 
-        for model_name in models_to_try:
-            try:
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(
-                    [prompt, {"mime_type": mime_type, "data": image_bytes}],
-                    request_options={"timeout": 25.0}
-                )
-                if response and response.text:
-                    return response.text
-            except Exception as e:
-                last_err = e
-                err_str = str(e).lower()
-                print(f"Key {key_idx + 1} with {model_name} failed: {e}")
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                res = client.post(url, json=payload)
+                data = res.json()
 
-                # If quota/rate-limit hit, switch immediately to the next API key
-                if "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
-                    break
-                continue
+                if res.status_code == 200:
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            return parts[0].get("text", "")
+
+                err_msg = data.get("error", {}).get("message", res.text)
+                last_err = err_msg
+                print(f"Key {key_idx + 1} failed: {res.status_code} - {err_msg}")
+
+                # If quota/rate-limit hit, continue to next key
+                if res.status_code == 429 or "quota" in err_msg.lower():
+                    continue
+
+        except Exception as net_err:
+            last_err = str(net_err)
+            print(f"Key {key_idx + 1} network exception: {net_err}")
+            continue
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Vision inference error: {str(last_err)}"
+        detail=f"Gemini API Error: {last_err}"
     )
 
 
