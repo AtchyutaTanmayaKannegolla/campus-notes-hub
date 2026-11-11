@@ -73,12 +73,10 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image decoding failed: {str(e)}")
 
-    # Standard production models supported across SDK versions
+    # Standard production models supported across all AI Studio projects
     models_to_try = [
         "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-exp"
+        "gemini-1.5-pro"
     ]
     last_err = None
 
@@ -103,7 +101,6 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
                 # If quota/rate-limit hit, switch immediately to the next API key
                 if "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
                     break
-                # If model name returns 404 or transient issue, try next model in candidate list
                 continue
 
     raise HTTPException(
