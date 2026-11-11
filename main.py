@@ -19,7 +19,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ADMIN_UPLOAD_KEY = os.getenv("ADMIN_UPLOAD_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Read comma-separated keys from GEMINI_API_KEYS or fallback to GEMINI_API_KEY
+# Reads comma-separated keys from GEMINI_API_KEYS or falls back to GEMINI_API_KEY
 RAW_GEMINI_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
 GEMINI_KEY_POOL = [k.strip() for k in RAW_GEMINI_KEYS.split(",") if k.strip()]
 
@@ -73,10 +73,9 @@ def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Image decoding failed: {str(e)}")
 
-    # Standard production models supported across all AI Studio projects
+    # Standard production vision model supported by Google AI Studio keys
     models_to_try = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "gemini-1.5-flash"
     ]
     last_err = None
 
