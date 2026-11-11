@@ -53,9 +53,7 @@
     </div>
 
     <!-- Notes Grid -->
-    <div id="notesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- Injected via JavaScript -->
-    </div>
+    <div id="notesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
   </main>
 
   <!-- Floating StudyBot Launcher -->
@@ -419,14 +417,20 @@
           })
         });
 
-        const data = await res.json();
-        loader.remove();
+        const data = await res.json().catch(() => ({}));
+        
+        const activeLoader = document.getElementById("docLoader");
+        if (activeLoader) activeLoader.remove();
 
-        if (!res.ok) throw new Error(data.detail || "Server error");
+        if (!res.ok) {
+          throw new Error(data.detail || `Server error (${res.status})`);
+        }
+
         appendMessage("docChatMessages", "ai", data.response);
 
       } catch (err) {
-        loader.remove();
+        const activeLoader = document.getElementById("docLoader");
+        if (activeLoader) activeLoader.remove();
         renderRetryCard("docChatMessages", err.message, "executeDocChat()");
       } finally {
         btn.disabled = false;
@@ -475,14 +479,20 @@
           })
         });
 
-        const data = await res.json();
-        loader.remove();
+        const data = await res.json().catch(() => ({}));
+        
+        const activeLoader = document.getElementById("studyBotLoader");
+        if (activeLoader) activeLoader.remove();
 
-        if (!res.ok) throw new Error(data.detail || "Server error");
+        if (!res.ok) {
+          throw new Error(data.detail || `Server error (${res.status})`);
+        }
+
         appendMessage("studyBotMessages", "ai", data.response);
 
       } catch (err) {
-        loader.remove();
+        const activeLoader = document.getElementById("studyBotLoader");
+        if (activeLoader) activeLoader.remove();
         renderRetryCard("studyBotMessages", err.message, "executeStudyBotChat()");
       } finally {
         btn.disabled = false;

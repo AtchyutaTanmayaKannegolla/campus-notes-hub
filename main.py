@@ -1,8 +1,8 @@
 import os
 import io
 import base64
-import urllib.request
 from dotenv import load_dotenv
+import httpx
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,16 +18,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ADMIN_UPLOAD_KEY = os.getenv("ADMIN_UPLOAD_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Read comma-separated keys from GEMINI_API_KEYS or fallback to GEMINI_API_KEY
+RAW_GEMINI_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
+GEMINI_KEY_POOL = [k.strip() for k in RAW_GEMINI_KEYS.split(",") if k.strip()]
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 groq_client = groq.Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 TEXT_MODEL = "openai/gpt-oss-120b"
 
@@ -54,52 +54,58 @@ class DocChatRequest(BaseModel):
 
 
 def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
-    """Extracts base64 bytes and prompts Gemini Flash for multimodal analysis with fallback."""
-    if not GEMINI_API_KEY:
+    """Rotates across configured Gemini API keys on quota limits (429)."""
+    if not GEMINI_KEY_POOL:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="GEMINI_API_KEY is not configured on the server."
+            detail="No Gemini API keys configured on the server."
         )
 
-    if "," in image_data_url:
-        header, b64_str = image_data_url.split(",", 1)
-        mime_type = header.split(";")[0].replace("data:", "")
-    else:
-        b64_str = image_data_url
-        mime_type = "image/png"
+    try:
+        if "," in image_data_url:
+            header, b64_str = image_data_url.split(",", 1)
+            mime_type = header.split(";")[0].replace("data:", "").strip()
+        else:
+            b64_str = image_data_url
+            mime_type = "image/png"
 
-    image_bytes = base64.b64decode(b64_str)
+        image_bytes = base64.b64decode(b64_str)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Image decoding failed: {str(e)}")
 
-    vision_candidates = [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-8b",
-        "gemini-3.8-flash"
-    ]
+    models_to_try = ["gemini-2.0-flash", "gemini-2.0-flash-lite"]
+    last_err = None
 
-    last_error = None
-    for model_name in vision_candidates:
-        try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content([
-                prompt,
-                {"mime_type": mime_type, "data": image_bytes}
-            ])
-            return response.text
-        except Exception as e:
-            last_error = e
-            err_str = str(e)
-            if "429" in err_str or "404" in err_str or "quota" in err_str.lower():
+    # Rotate through keys across different projects
+    for key_idx, api_key in enumerate(GEMINI_KEY_POOL):
+        genai.configure(api_key=api_key)
+
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(
+                    [prompt, {"mime_type": mime_type, "data": image_bytes}],
+                    request_options={"timeout": 25.0}
+                )
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                last_err = e
+                err_str = str(e).lower()
+                print(f"Key {key_idx + 1} with {model_name} failed: {e}")
+
+                # If quota or rate-limit hit, move to the next key
+                if "429" in err_str or "quota" in err_str or "resource_exhausted" in err_str:
+                    break
                 continue
-            raise e
 
     raise HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail=f"All available vision model quotas exhausted. Error: {last_error}"
+        detail=f"All API key quotas exhausted. Last error: {str(last_err)}"
     )
 
 
+# Supports both GET and HEAD for Render health checks
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_home():
     with open("index.html", "r", encoding="utf-8") as f:
@@ -194,6 +200,8 @@ async def study_bot_chat(payload: ChatRequest):
             )
             result = analyze_image_with_gemini(prompt, payload.image_base64)
             return {"response": result}
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Image vision processing error: {str(e)}")
 
@@ -228,17 +236,18 @@ async def document_qa(payload: DocChatRequest):
     title = res.data[0]["title"]
 
     try:
-        req = urllib.request.Request(file_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as resp:
-            pdf_bytes = resp.read()
+        # Non-blocking async download with a 12s timeout
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            resp = await client.get(file_url)
+            pdf_bytes = resp.content
 
         reader = PdfReader(io.BytesIO(pdf_bytes))
         extracted_text = ""
-        for i, page in enumerate(reader.pages[:10]):
+        for i, page in enumerate(reader.pages[:6]):
             page_text = page.extract_text() or ""
             extracted_text += f"\n--- Page {i+1} ---\n" + page_text
 
-        context = extracted_text[:8000] if extracted_text.strip() else "No text extracted from PDF."
+        context = extracted_text[:4000] if extracted_text.strip() else "No text extracted from PDF."
         doc_prompt = (
             f"You are an academic document assistant analyzing notes titled '{title}'.\n\n"
             f"Document Excerpt:\n{context}\n\n"
@@ -265,5 +274,7 @@ async def document_qa(payload: DocChatRequest):
             max_tokens=1024
         )
         return {"response": response.choices[0].message.content}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF Q&A processing error: {str(e)}")

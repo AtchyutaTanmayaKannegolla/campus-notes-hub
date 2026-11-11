@@ -6,3 +6,4 @@ supabase
 groq
 pypdf
 google-generativeai
+httpx
