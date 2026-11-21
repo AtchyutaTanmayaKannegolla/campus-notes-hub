@@ -1,6 +1,5 @@
 import os
 import io
-import base64
 from dotenv import load_dotenv
 import httpx
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, status
@@ -17,10 +16,6 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ADMIN_UPLOAD_KEY = os.getenv("ADMIN_UPLOAD_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-# Reads comma-separated keys from GEMINI_API_KEYS or falls back to GEMINI_API_KEY
-RAW_GEMINI_KEYS = os.getenv("GEMINI_API_KEYS", os.getenv("GEMINI_API_KEY", ""))
-GEMINI_KEY_POOL = [k.strip() for k in RAW_GEMINI_KEYS.split(",") if k.strip()]
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables.")
@@ -43,85 +38,13 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     message: str
-    image_base64: str | None = None
 
 
 class DocChatRequest(BaseModel):
     note_id: int
     question: str
-    image_base64: str | None = None
 
 
-def analyze_image_with_gemini(prompt: str, image_data_url: str) -> str:
-    """Sends vision requests directly via REST endpoint, compatible with AQ and AIzaSy keys."""
-    if not GEMINI_KEY_POOL:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="No Gemini API keys configured on the server."
-        )
-
-    try:
-        if "," in image_data_url:
-            header, b64_str = image_data_url.split(",", 1)
-            mime_type = header.split(";")[0].replace("data:", "").strip()
-        else:
-            b64_str = image_data_url
-            mime_type = "image/png"
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Image decoding failed: {str(e)}")
-
-    payload = {
-        "contents": [{
-            "parts": [
-                {"text": prompt},
-                {
-                    "inline_data": {
-                        "mime_type": mime_type,
-                        "data": b64_str
-                    }
-                }
-            ]
-        }]
-    }
-
-    last_err = None
-
-    # Rotate through API keys
-    for key_idx, api_key in enumerate(GEMINI_KEY_POOL):
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-
-        try:
-            with httpx.Client(timeout=30.0) as client:
-                res = client.post(url, json=payload)
-                data = res.json()
-
-                if res.status_code == 200:
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            return parts[0].get("text", "")
-
-                err_msg = data.get("error", {}).get("message", res.text)
-                last_err = err_msg
-                print(f"Key {key_idx + 1} failed: {res.status_code} - {err_msg}")
-
-                # If quota/rate-limit hit, continue to next key
-                if res.status_code == 429 or "quota" in err_msg.lower():
-                    continue
-
-        except Exception as net_err:
-            last_err = str(net_err)
-            print(f"Key {key_idx + 1} network exception: {net_err}")
-            continue
-
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Gemini API Error: {last_err}"
-    )
-
-
-# Supports both GET and HEAD for Render health checks
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_home():
     with open("index.html", "r", encoding="utf-8") as f:
@@ -207,20 +130,6 @@ async def download_note(note_id: int):
 
 @app.post("/api/ai/chat")
 async def study_bot_chat(payload: ChatRequest):
-    if payload.image_base64:
-        try:
-            prompt = (
-                "You are Campus StudyBot, an expert academic tutor. "
-                "Analyze this diagram, screenshot, or handwritten note and provide a clear, structured explanation:\n\n"
-                f"{payload.message or 'Explain this image in detail.'}"
-            )
-            result = analyze_image_with_gemini(prompt, payload.image_base64)
-            return {"response": result}
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Image vision processing error: {str(e)}")
-
     if not groq_client:
         raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
@@ -252,7 +161,6 @@ async def document_qa(payload: DocChatRequest):
     title = res.data[0]["title"]
 
     try:
-        # Non-blocking async download with a 12s timeout
         async with httpx.AsyncClient(timeout=12.0) as client:
             resp = await client.get(file_url)
             pdf_bytes = resp.content
@@ -267,12 +175,8 @@ async def document_qa(payload: DocChatRequest):
         doc_prompt = (
             f"You are an academic document assistant analyzing notes titled '{title}'.\n\n"
             f"Document Excerpt:\n{context}\n\n"
-            f"User Question/Prompt: {payload.question or 'Explain the attached screenshot in the context of this document.'}"
+            f"User Question: {payload.question}"
         )
-
-        if payload.image_base64:
-            result = analyze_image_with_gemini(doc_prompt, payload.image_base64)
-            return {"response": result}
 
         if not groq_client:
             raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
