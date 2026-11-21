@@ -45,6 +45,13 @@ class DocChatRequest(BaseModel):
     question: str
 
 
+class NoteUpdateRequest(BaseModel):
+    title: str
+    subject: str
+    semester: str
+    category: str
+
+
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_home():
     with open("index.html", "r", encoding="utf-8") as f:
@@ -96,6 +103,33 @@ async def upload_note(
     }).execute()
 
     return {"message": "Upload successful", "data": insert_res.data}
+
+
+@app.put("/api/notes/{note_id}")
+async def update_note(
+    note_id: int,
+    payload: NoteUpdateRequest,
+    x_admin_key: str = Header(None)
+):
+    expected_key = os.getenv("ADMIN_UPLOAD_KEY")
+    if not x_admin_key or x_admin_key.strip() != (expected_key or "").strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid passkey. Edit access denied."
+        )
+
+    existing = supabase.table("notes").select("id").eq("id", note_id).execute()
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Note not found.")
+
+    update_res = supabase.table("notes").update({
+        "title": payload.title.strip(),
+        "subject": payload.subject.strip(),
+        "semester": payload.semester.strip(),
+        "category": payload.category.strip()
+    }).eq("id", note_id).execute()
+
+    return {"message": "Note updated successfully", "data": update_res.data}
 
 
 @app.delete("/api/notes/{note_id}")
