@@ -24,7 +24,7 @@
     <!-- Navbar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="exitFolder()">
                 <span class="text-2xl">📚</span>
                 <h1 class="text-xl font-bold text-slate-900 tracking-tight">Campus Notes Hub</h1>
             </div>
@@ -38,9 +38,9 @@
     <main class="max-w-6xl mx-auto px-5 py-7 w-full flex-1">
         <!-- Search & Filter Bar -->
         <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row gap-3">
-            <input type="text" id="searchInput" oninput="filterNotes()" placeholder="Search by title or subject..."
+            <input type="text" id="searchInput" oninput="renderCurrentView()" placeholder="Search folders, subjects, or unit titles..."
                 class="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-            <select id="semesterFilter" onchange="filterNotes()"
+            <select id="semesterFilter" onchange="renderCurrentView()"
                 class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="ALL">All Semesters</option>
                 <option value="1">Sem 1</option>
@@ -54,9 +54,24 @@
             </select>
         </div>
 
-        <!-- Notes Grid -->
+        <!-- Folder Breadcrumb Bar -->
+        <div id="folderBreadcrumb" class="hidden items-center justify-between bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm mb-5">
+            <div class="flex items-center gap-3">
+                <button onclick="exitFolder()"
+                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5">
+                    <span>&larr;</span> Back to Folders
+                </button>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="text-slate-400">Folders /</span>
+                    <span id="activeFolderTitle" class="font-bold text-slate-900 uppercase"></span>
+                </div>
+            </div>
+            <span id="activeFolderCount" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg"></span>
+        </div>
+
+        <!-- Folders / Notes Grid -->
         <div id="notesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <div class="col-span-full text-center py-12 text-slate-400 text-sm">Loading notes...</div>
+            <div class="col-span-full text-center py-12 text-slate-400 text-sm">Loading folders...</div>
         </div>
     </main>
 
@@ -102,15 +117,16 @@
             </div>
             <form id="uploadForm" onsubmit="handleUpload(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Title</label>
-                    <input type="text" name="title" required placeholder="e.g., ALL UNITS QUESTIONS"
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Unit / Document Title</label>
+                    <input type="text" name="title" required placeholder="e.g., Unit 1 - Automata Theory"
                         class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Subject</label>
-                        <input type="text" name="subject" required placeholder="e.g., FLAT"
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Folder / Subject</label>
+                        <input type="text" id="uploadSubjectInput" name="subject" list="existingFoldersList" required placeholder="e.g., FLAT or Previous Year Papers"
                             class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <datalist id="existingFoldersList"></datalist>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Semester</label>
@@ -166,14 +182,14 @@
             <form id="editForm" onsubmit="handleEditSubmit(event)" class="space-y-4">
                 <input type="hidden" id="editNoteId">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Title</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Unit / Document Title</label>
                     <input type="text" id="editTitle" required
                         class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Subject</label>
-                        <input type="text" id="editSubject" required
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Folder / Subject</label>
+                        <input type="text" id="editSubject" list="existingFoldersList" required
                             class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
                     <div>
@@ -249,6 +265,7 @@
 
     <script>
         let allNotes = [];
+        let activeFolderKey = null;
         let activeNoteId = null;
         let lastDocQuestion = "";
         let lastBotQuestion = "";
@@ -257,11 +274,16 @@
             try {
                 const res = await fetch('/api/notes');
                 allNotes = await res.json();
-                renderNotes(allNotes);
+                populateFolderDatalist();
+                renderCurrentView();
             } catch (err) {
                 document.getElementById('notesGrid').innerHTML =
                     `<div class="col-span-full text-center py-12 text-red-500 text-sm">Failed to load notes.</div>`;
             }
+        }
+
+        function normalizeFolderName(subject) {
+            return String(subject || 'Uncategorized').trim();
         }
 
         function formatSemBadge(sem) {
@@ -270,14 +292,169 @@
             return `SEM ${clean}`;
         }
 
-        function renderNotes(notes) {
-            const grid = document.getElementById('notesGrid');
-            if (!notes.length) {
-                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-sm">No notes found matching your filter.</div>`;
+        function populateFolderDatalist() {
+            const datalist = document.getElementById('existingFoldersList');
+            const seen = new Set();
+            const options = [];
+            allNotes.forEach(n => {
+                const name = normalizeFolderName(n.subject);
+                const key = name.toLowerCase();
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    options.push(`<option value="${escapeHtml(name)}">`);
+                }
+            });
+            if (!seen.has('previous year papers')) {
+                options.push(`<option value="Previous Year Papers">`);
+            }
+            datalist.innerHTML = options.join('');
+        }
+
+        function openFolder(folderKey) {
+            activeFolderKey = folderKey;
+            document.getElementById('searchInput').value = '';
+            renderCurrentView();
+        }
+
+        function exitFolder() {
+            activeFolderKey = null;
+            document.getElementById('searchInput').value = '';
+            renderCurrentView();
+        }
+
+        function renderCurrentView() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const sem = document.getElementById('semesterFilter').value;
+            const breadcrumb = document.getElementById('folderBreadcrumb');
+
+            const semFiltered = allNotes.filter(n => {
+                const noteSem = String(n.semester || '').replace(/^sem\s*/i, '').trim();
+                return sem === 'ALL' || noteSem === sem;
+            });
+
+            if (activeFolderKey !== null) {
+                const folderNotes = semFiltered.filter(n => {
+                    const key = normalizeFolderName(n.subject).toLowerCase();
+                    const matchesFolder = key === activeFolderKey;
+                    const matchesQuery = !query ||
+                        (n.title || '').toLowerCase().includes(query) ||
+                        (n.category || '').toLowerCase().includes(query);
+                    return matchesFolder && matchesQuery;
+                });
+
+                const displayTitle = folderNotes[0]
+                    ? normalizeFolderName(folderNotes[0].subject)
+                    : activeFolderKey.toUpperCase();
+
+                breadcrumb.classList.remove('hidden');
+                breadcrumb.classList.add('flex');
+                document.getElementById('activeFolderTitle').textContent = displayTitle;
+                document.getElementById('activeFolderCount').textContent =
+                    `${folderNotes.length} ${folderNotes.length === 1 ? 'File' : 'Files'}`;
+
+                renderNoteCards(folderNotes);
                 return;
             }
 
-            grid.innerHTML = notes.map(note => `
+            if (query) {
+                breadcrumb.classList.add('hidden');
+                breadcrumb.classList.remove('flex');
+
+                const matchedNotes = semFiltered.filter(n =>
+                    (n.title || '').toLowerCase().includes(query) ||
+                    (n.subject || '').toLowerCase().includes(query) ||
+                    (n.category || '').toLowerCase().includes(query)
+                );
+                renderNoteCards(matchedNotes);
+                return;
+            }
+
+            breadcrumb.classList.add('hidden');
+            breadcrumb.classList.remove('flex');
+            renderFolders(semFiltered);
+        }
+
+        function renderFolders(notesList) {
+            const grid = document.getElementById('notesGrid');
+            if (!notesList.length) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-sm">No folders found matching your filter.</div>`;
+                return;
+            }
+
+            const folderMap = new Map();
+            notesList.forEach(note => {
+                const rawName = normalizeFolderName(note.subject);
+                const key = rawName.toLowerCase();
+                if (!folderMap.has(key)) {
+                    folderMap.set(key, {
+                        key: key,
+                        displayName: rawName.toUpperCase(),
+                        notes: [],
+                        sems: new Set()
+                    });
+                }
+                const entry = folderMap.get(key);
+                entry.notes.push(note);
+                if (note.semester) {
+                    entry.sems.add(formatSemBadge(note.semester));
+                }
+            });
+
+            const folders = Array.from(folderMap.values());
+
+            grid.innerHTML = folders.map(folder => {
+                const semList = Array.from(folder.sems).join(', ') || 'ALL SEMS';
+                const count = folder.notes.length;
+                const previewTitles = folder.notes
+                    .slice(0, 2)
+                    .map(n => escapeHtml(n.title))
+                    .join(' • ');
+
+                return `
+                    <div onclick="openFolder('${escapeHtml(folder.key).replace(/'/g, "\\'")}')"
+                        class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition cursor-pointer flex flex-col justify-between group">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <span class="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold uppercase tracking-wide rounded-md">
+                                    FOLDER
+                                </span>
+                                <span class="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-[11px] font-bold uppercase tracking-wide rounded-md">
+                                    ${escapeHtml(semList)}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2.5 mb-1.5">
+                                <span class="text-2xl">📁</span>
+                                <h3 class="font-bold text-slate-900 text-base group-hover:text-indigo-700 transition line-clamp-1">
+                                    ${escapeHtml(folder.displayName)}
+                                </h3>
+                            </div>
+                            <p class="text-xs text-slate-500 line-clamp-1 mb-4">
+                                ${previewTitles}
+                            </p>
+                        </div>
+                        <div class="pt-2">
+                            <div class="w-full bg-indigo-50/70 group-hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                                <span>Open Folder (${count} ${count === 1 ? 'PDF' : 'PDFs'})</span>
+                                <span>&rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderNoteCards(notes) {
+            const grid = document.getElementById('notesGrid');
+            if (!notes.length) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-sm">No PDFs found in this folder.</div>`;
+                return;
+            }
+
+            const sortedNotes = [...notes].sort((a, b) =>
+                (a.title || '').localeCompare(b.title || '', undefined, { numeric: true, sensitivity: 'base' })
+            );
+
+            grid.innerHTML = sortedNotes.map(note => `
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2 mb-3">
@@ -315,22 +492,12 @@
             `).join('');
         }
 
-        function filterNotes() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const sem = document.getElementById('semesterFilter').value;
-
-            const filtered = allNotes.filter(n => {
-                const matchesSearch = (n.title || '').toLowerCase().includes(query) ||
-                                      (n.subject || '').toLowerCase().includes(query);
-                const noteSem = String(n.semester || '').replace(/^sem\s*/i, '').trim();
-                const matchesSem = sem === 'ALL' || noteSem === sem;
-                return matchesSearch && matchesSem;
-            });
-            renderNotes(filtered);
-        }
-
         // Upload Modal Controls
         function openUploadModal() {
+            if (activeFolderKey) {
+                const match = allNotes.find(n => normalizeFolderName(n.subject).toLowerCase() === activeFolderKey);
+                document.getElementById('uploadSubjectInput').value = match ? normalizeFolderName(match.subject) : activeFolderKey.toUpperCase();
+            }
             document.getElementById('uploadModal').classList.remove('hidden');
             document.getElementById('uploadModal').classList.add('flex');
         }
