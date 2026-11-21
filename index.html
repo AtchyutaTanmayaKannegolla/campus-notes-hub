@@ -132,11 +132,12 @@
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Semester</label>
                         <select name="semester" required
                             class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="" disabled selected>Select Sem</option>
                             <option value="1">Sem 1</option>
                             <option value="2">Sem 2</option>
                             <option value="3">Sem 3</option>
                             <option value="4">Sem 4</option>
-                            <option value="5" selected>Sem 5</option>
+                            <option value="5">Sem 5</option>
                             <option value="6">Sem 6</option>
                             <option value="7">Sem 7</option>
                             <option value="8">Sem 8</option>
@@ -520,6 +521,8 @@
 
             try {
                 const formData = new FormData(form);
+                const uploadedSubject = normalizeFolderName(formData.get('subject')).toLowerCase();
+
                 const res = await fetch('/api/notes/upload', {
                     method: 'POST',
                     body: formData
@@ -529,6 +532,9 @@
 
                 form.reset();
                 closeUploadModal();
+
+                document.getElementById('semesterFilter').value = 'ALL';
+                activeFolderKey = uploadedSubject;
                 await fetchNotes();
             } catch (err) {
                 statusDiv.textContent = err.message;
@@ -701,7 +707,7 @@
                 document.getElementById(loaderId).outerHTML = `
                     <div class="flex justify-start">
                         <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-800 max-w-[92%] shadow-sm markdown-body overflow-x-auto">
-                            ${marked.parse(data.response)}
+                            ${marked.parse(cleanMathSymbols(data.response))}
                         </div>
                     </div>
                 `;
@@ -787,7 +793,7 @@
                 document.getElementById(loaderId).outerHTML = `
                     <div class="flex justify-start w-full">
                         <div class="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 w-full shadow-sm markdown-body overflow-x-auto">
-                            ${marked.parse(data.response)}
+                            ${marked.parse(cleanMathSymbols(data.response))}
                         </div>
                     </div>
                 `;
@@ -807,6 +813,42 @@
                 btn.disabled = false;
                 history.scrollTop = history.scrollHeight;
             }
+        }
+
+        function cleanMathSymbols(text) {
+            const replacements = [
+                [/\\Sigma/g, 'Σ'],
+                [/\\delta/g, 'δ'],
+                [/\\Delta/g, 'Δ'],
+                [/\\epsilon|\\varepsilon/g, 'ε'],
+                [/\\lambda/g, 'λ'],
+                [/\\rightarrow|\\to/g, '→'],
+                [/\\Rightarrow/g, '⇒'],
+                [/\\leftrightarrow/g, '↔'],
+                [/\\times/g, '×'],
+                [/\\in\b/g, '∈'],
+                [/\\notin\b/g, '∉'],
+                [/\\subseteq/g, '⊆'],
+                [/\\subset/g, '⊂'],
+                [/\\cup/g, '∪'],
+                [/\\cap/g, '∩'],
+                [/\\emptyset/g, '∅'],
+                [/\\neq/g, '≠'],
+                [/\\leq/g, '≤'],
+                [/\\geq/g, '≥'],
+                [/\\forall/g, '∀'],
+                [/\\exists/g, '∃'],
+                [/q_0/g, 'q₀'],
+                [/q_1/g, 'q₁'],
+                [/q_2/g, 'q₂'],
+                [/\\\(|\\\)/g, ''],
+                [/\\\[|\\\]/g, '']
+            ];
+            let cleaned = String(text);
+            for (const [pattern, symbol] of replacements) {
+                cleaned = cleaned.replace(pattern, symbol);
+            }
+            return cleaned;
         }
 
         function escapeHtml(str) {

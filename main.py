@@ -173,7 +173,12 @@ async def study_bot_chat(payload: ChatRequest):
             messages=[
                 {
                     "role": "system",
-                    "content": "You are Campus StudyBot, an expert academic tutor. Format your answers with clean Markdown, concise bullet points, and code blocks where applicable."
+                    "content": (
+                        "You are Campus StudyBot, an expert academic tutor. Format your answers with clean Markdown, "
+                        "concise bullet points, and code blocks where applicable. "
+                        "IMPORTANT: Never use LaTeX syntax or backslashes (such as \\Sigma, \\delta, \\rightarrow, \\in, or $...$). "
+                        "Always use plain Unicode math symbols instead (e.g., Σ, δ, ε, →, ∈, ⊆, ×, ≠, ≤, ≥, q₀)."
+                    )
                 },
                 {"role": "user", "content": payload.message}
             ],
@@ -187,42 +192,57 @@ async def study_bot_chat(payload: ChatRequest):
 
 @app.post("/api/ai/doc-chat")
 async def document_qa(payload: DocChatRequest):
-    res = supabase.table("notes").select("file_url, title").eq("id", payload.note_id).execute()
+    res = supabase.table("notes").select("file_url, title, subject").eq("id", payload.note_id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Note document not found.")
 
     file_url = res.data[0]["file_url"]
     title = res.data[0]["title"]
+    subject = res.data[0].get("subject", "")
 
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(file_url)
             pdf_bytes = resp.content
 
         reader = PdfReader(io.BytesIO(pdf_bytes))
-        extracted_text = ""
-        for i, page in enumerate(reader.pages[:6]):
-            page_text = page.extract_text() or ""
-            extracted_text += f"\n--- Page {i+1} ---\n" + page_text
-
-        context = extracted_text[:4000] if extracted_text.strip() else "No text extracted from PDF."
-        doc_prompt = (
-            f"You are an academic document assistant analyzing notes titled '{title}'.\n\n"
-            f"Document Excerpt:\n{context}\n\n"
-            f"User Question: {payload.question}"
-        )
+        extracted_pages = []
+        for i, page in enumerate(reader.pages):
+            page_text = (page.extract_text() or "").strip()
+            if page_text:
+                extracted_pages.append(f"--- Page {i+1} ---\n{page_text}")
+            if sum(len(p) for p in extracted_pages) >= 6000:
+                break
 
         if not groq_client:
             raise HTTPException(status_code=500, detail="Groq API Key is not configured on the server.")
 
+        math_rule = (
+            " Never use LaTeX syntax or backslashes (such as \\Sigma, \\delta, \\rightarrow, \\in, or $...$). "
+            "Always use plain Unicode math symbols instead (e.g., Σ, δ, ε, →, ∈, ⊆, ×, q₀)."
+        )
+
+        if extracted_pages:
+            context = "\n\n".join(extracted_pages)[:6000]
+            system_msg = (
+                f"You are an academic document assistant analyzing notes titled '{title}' ({subject}). "
+                "Answer clearly using the provided document excerpt in clean Markdown." + math_rule
+            )
+            user_msg = f"Document Excerpt:\n{context}\n\nUser Question: {payload.question}"
+        else:
+            system_msg = (
+                f"You are an expert academic tutor helping a student studying '{title}' in '{subject}'. "
+                "This PDF consists of scanned handwritten pages without selectable text, so answer the student's "
+                "question directly, thoroughly, and accurately in clean Markdown based on the subject syllabus. "
+                "Do not mention missing text or page placeholders." + math_rule
+            )
+            user_msg = f"Subject: {subject} | Topic/Unit: {title}\nQuestion: {payload.question}"
+
         response = groq_client.chat.completions.create(
             model=TEXT_MODEL,
             messages=[
-                {
-                    "role": "system",
-                    "content": f"You are an academic document assistant analyzing notes titled '{title}'. Answer clearly using the provided document excerpt in clean Markdown."
-                },
-                {"role": "user", "content": doc_prompt}
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg}
             ],
             temperature=0.3,
             max_tokens=1024
