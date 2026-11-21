@@ -10,57 +10,47 @@
         .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.4rem; margin-bottom: 0.4rem; }
         .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.4rem; margin-bottom: 0.4rem; }
         .markdown-body p { margin-bottom: 0.5rem; }
-        .markdown-body pre { background: #1e293b; color: #f8fafc; padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.5rem 0; font-size: 0.85rem; }
-        .markdown-body code { background: #e2e8f0; color: #0f172a; padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.85rem; }
+        .markdown-body pre { background: #1e293b; color: #f8fafc; padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.5rem 0; font-size: 0.82rem; }
+        .markdown-body code { background: #e2e8f0; color: #0f172a; padding: 0.1rem 0.3rem; border-radius: 0.25rem; font-size: 0.82rem; }
         .markdown-body pre code { background: transparent; color: inherit; padding: 0; }
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 700; margin-top: 0.75rem; margin-bottom: 0.25rem; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 700; margin-top: 0.65rem; margin-bottom: 0.35rem; color: #1e293b; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin: 0.65rem 0; font-size: 0.8rem; background: #fff; }
+        .markdown-body th, .markdown-body td { border: 1px solid #cbd5e1; padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
+        .markdown-body th { background: #f1f5f9; font-weight: 600; color: #334155; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
     <!-- Navbar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 text-white p-2 rounded-xl font-bold text-lg shadow-sm">
-                    📚
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">Campus Notes Hub</h1>
-                    <p class="text-xs text-slate-500">Academic Repository & AI Study Assistant</p>
-                </div>
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5">
+                <span class="text-2xl">📚</span>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Campus Notes Hub</h1>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="openStudyBotModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition flex items-center gap-2 border border-slate-200">
-                    <span>🤖</span> StudyBot
-                </button>
-                <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl text-sm shadow-sm transition flex items-center gap-2">
-                    <span>+</span> Upload Material
-                </button>
-            </div>
+            <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl text-sm shadow-sm transition flex items-center gap-1.5">
+                <span>+</span> Upload Material
+            </button>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-6xl mx-auto px-4 py-8 w-full flex-1">
+    <main class="max-w-6xl mx-auto px-5 py-7 w-full flex-1">
         <!-- Search & Filter Bar -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row gap-3">
-            <div class="relative flex-1">
-                <span class="absolute left-3.5 top-2.5 text-slate-400">🔍</span>
-                <input type="text" id="searchInput" oninput="filterNotes()" placeholder="Search by title or subject..."
-                    class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-            </div>
+        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row gap-3">
+            <input type="text" id="searchInput" oninput="filterNotes()" placeholder="Search by title or subject..."
+                class="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
             <select id="semesterFilter" onchange="filterNotes()"
-                class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                class="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="ALL">All Semesters</option>
-                <option value="Sem 1">Sem 1</option>
-                <option value="Sem 2">Sem 2</option>
-                <option value="Sem 3">Sem 3</option>
-                <option value="Sem 4">Sem 4</option>
-                <option value="Sem 5">Sem 5</option>
-                <option value="Sem 6">Sem 6</option>
-                <option value="Sem 7">Sem 7</option>
-                <option value="Sem 8">Sem 8</option>
+                <option value="1">Sem 1</option>
+                <option value="2">Sem 2</option>
+                <option value="3">Sem 3</option>
+                <option value="4">Sem 4</option>
+                <option value="5">Sem 5</option>
+                <option value="6">Sem 6</option>
+                <option value="7">Sem 7</option>
+                <option value="8">Sem 8</option>
             </select>
         </div>
 
@@ -69,6 +59,42 @@
             <div class="col-span-full text-center py-12 text-slate-400 text-sm">Loading notes...</div>
         </div>
     </main>
+
+    <!-- Floating Bottom-Right StudyBot Toggle Button -->
+    <button onclick="toggleStudyBot()"
+        class="fixed bottom-5 right-5 z-40 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-3 rounded-full shadow-lg transition flex items-center gap-2 text-sm">
+        <span>🤖</span> Ask StudyBot
+    </button>
+
+    <!-- Docked Bottom-Right Campus StudyBot Window -->
+    <div id="studyBotDrawer"
+        class="fixed bottom-20 right-5 z-50 w-[370px] max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 hidden flex-col overflow-hidden"
+        style="height: 510px;">
+        <!-- Purple Header -->
+        <div class="bg-indigo-600 text-white px-4 py-3.5 flex items-center justify-between">
+            <h2 class="font-semibold text-base tracking-tight">Campus StudyBot</h2>
+            <button onclick="toggleStudyBot()" class="text-white/80 hover:text-white text-xl leading-none font-bold">&times;</button>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div id="botChatHistory" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/70">
+            <div class="bg-white border border-slate-200 rounded-xl p-3.5 text-sm text-slate-600 shadow-sm">
+                Hi! Ask me any study question, concept, or coding problem.
+            </div>
+        </div>
+
+        <!-- Input Footer -->
+        <div class="p-3 bg-white border-t border-slate-200">
+            <form onsubmit="handleBotAsk(event)" class="flex items-center gap-2">
+                <input type="text" id="botQuestionInput" placeholder="Ask a study question..."
+                    class="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                <button type="submit" id="botAskBtn"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Upload Modal -->
     <div id="uploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -80,27 +106,27 @@
             <form id="uploadForm" onsubmit="handleUpload(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Title</label>
-                    <input type="text" name="title" required placeholder="e.g., Unit 1 - Data Warehousing"
+                    <input type="text" name="title" required placeholder="e.g., ALL UNITS QUESTIONS"
                         class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Subject</label>
-                        <input type="text" name="subject" required placeholder="e.g., DWDM"
+                        <input type="text" name="subject" required placeholder="e.g., CN"
                             class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Semester</label>
                         <select name="semester" required
                             class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                            <option value="Sem 1">Sem 1</option>
-                            <option value="Sem 2">Sem 2</option>
-                            <option value="Sem 3">Sem 3</option>
-                            <option value="Sem 4">Sem 4</option>
-                            <option value="Sem 5">Sem 5</option>
-                            <option value="Sem 6">Sem 6</option>
-                            <option value="Sem 7">Sem 7</option>
-                            <option value="Sem 8">Sem 8</option>
+                            <option value="1">Sem 1</option>
+                            <option value="2">Sem 2</option>
+                            <option value="3">Sem 3</option>
+                            <option value="4">Sem 4</option>
+                            <option value="5" selected>Sem 5</option>
+                            <option value="6">Sem 6</option>
+                            <option value="7">Sem 7</option>
+                            <option value="8">Sem 8</option>
                         </select>
                     </div>
                 </div>
@@ -108,10 +134,10 @@
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
                     <select name="category" required
                         class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        <option value="Notes">Notes</option>
-                        <option value="Question Paper">Question Paper</option>
-                        <option value="Lab Manual">Lab Manual</option>
-                        <option value="Assignment">Assignment</option>
+                        <option value="NOTES">Notes</option>
+                        <option value="QUESTION PAPER">Question Paper</option>
+                        <option value="LAB MANUAL">Lab Manual</option>
+                        <option value="ASSIGNMENT">Assignment</option>
                     </select>
                 </div>
                 <div>
@@ -133,63 +159,26 @@
         </div>
     </div>
 
-    <!-- Document AI Modal -->
+    <!-- Document AI Modal ("Ask AI About This PDF") -->
     <div id="docAiModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full flex flex-col max-h-[85vh] shadow-xl border border-slate-100">
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+        <div class="bg-white rounded-2xl max-w-2xl w-full flex flex-col max-h-[85vh] shadow-xl border border-slate-100 overflow-hidden">
+            <div class="bg-indigo-600 text-white px-6 py-4 flex justify-between items-center">
                 <div>
-                    <h2 id="docAiTitle" class="text-lg font-bold text-slate-900">AI Assistant</h2>
-                    <p class="text-xs text-slate-500">Ask questions directly from notes</p>
+                    <h2 id="docAiTitle" class="text-base font-bold">Ask AI About This PDF</h2>
+                    <p class="text-xs text-indigo-100">Answers grounded directly in this document</p>
                 </div>
-                <button onclick="closeDocAiModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                <button onclick="closeDocAiModal()" class="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
             </div>
 
-            <!-- Chat History -->
-            <div id="docChatHistory" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-                <div id="docWelcomeMsg" class="bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-600 shadow-sm">
-                    Ask questions directly about this note!
-                </div>
-            </div>
+            <div id="docChatHistory" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/70"></div>
 
-            <!-- Input Area -->
-            <div class="p-4 bg-white border-t border-slate-100 rounded-b-2xl">
+            <div class="p-4 bg-white border-t border-slate-200">
                 <form onsubmit="handleDocAsk(event)" class="flex items-center gap-2">
-                    <input type="text" id="docQuestionInput" placeholder="Ask a question..."
+                    <input type="text" id="docQuestionInput" placeholder="Ask a question about this PDF..."
                         class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
                     <button type="submit" id="docAskBtn"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-sm">
-                        Ask
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- General StudyBot Modal -->
-    <div id="studyBotModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full flex flex-col max-h-[85vh] shadow-xl border border-slate-100">
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-900">Campus StudyBot</h2>
-                    <p class="text-xs text-slate-500">Ask any academic concept, code, or exam topic</p>
-                </div>
-                <button onclick="closeStudyBotModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
-            </div>
-
-            <div id="botChatHistory" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-                <div class="bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-600 shadow-sm">
-                    Hi! Ask me to explain concepts, summarize topics, or help with coding problems.
-                </div>
-            </div>
-
-            <div class="p-4 bg-white border-t border-slate-100 rounded-b-2xl">
-                <form onsubmit="handleBotAsk(event)" class="flex items-center gap-2">
-                    <input type="text" id="botQuestionInput" placeholder="Ask a question..."
-                        class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                    <button type="submit" id="botAskBtn"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-sm">
-                        Ask
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition">
+                        Send
                     </button>
                 </form>
             </div>
@@ -213,6 +202,12 @@
             }
         }
 
+        function formatSemBadge(sem) {
+            if (!sem) return '';
+            const clean = String(sem).replace(/^sem\s*/i, '').trim();
+            return `SEM ${clean}`;
+        }
+
         function renderNotes(notes) {
             const grid = document.getElementById('notesGrid');
             if (!notes.length) {
@@ -223,28 +218,32 @@
             grid.innerHTML = notes.map(note => `
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-3">
-                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg">
-                                ${escapeHtml(note.category || 'Notes')}
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold uppercase tracking-wide rounded-md">
+                                ${escapeHtml(note.category || 'NOTES')}
                             </span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-medium text-slate-400">${escapeHtml(note.semester || '')}</span>
-                                <button onclick="deleteNote(${note.id})" title="Delete note"
-                                    class="text-slate-300 hover:text-red-500 text-xs transition px-1">🗑️</button>
-                            </div>
+                            <span class="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-[11px] font-bold uppercase tracking-wide rounded-md">
+                                ${escapeHtml(formatSemBadge(note.semester))}
+                            </span>
                         </div>
                         <h3 class="font-bold text-slate-900 text-base mb-1 line-clamp-2">${escapeHtml(note.title)}</h3>
                         <p class="text-xs text-slate-500 mb-4">${escapeHtml(note.subject)}</p>
                     </div>
-                    <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <div class="space-y-2.5 pt-2">
                         <button onclick="openDocAiModal(${note.id}, '${escapeHtml(note.title).replace(/'/g, "\\'")}')"
-                            class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
-                            <span>✨</span> Ask AI About This Note
+                            class="w-full bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                            <span>✨</span> Ask AI About This PDF
                         </button>
-                        <a href="/api/notes/${note.id}/download" target="_blank"
-                            class="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium py-2 rounded-xl text-xs transition flex items-center justify-center border border-slate-200">
-                            Download
-                        </a>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <a href="/api/notes/${note.id}/download" target="_blank"
+                                class="bg-white hover:bg-slate-50 text-slate-700 font-medium py-2 rounded-xl text-xs transition flex items-center justify-center border border-slate-200">
+                                Download
+                            </a>
+                            <button onclick="deleteNote(${note.id})"
+                                class="bg-white hover:bg-red-50 text-red-500 font-medium py-2 rounded-xl text-xs transition flex items-center justify-center border border-slate-200">
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -257,7 +256,8 @@
             const filtered = allNotes.filter(n => {
                 const matchesSearch = (n.title || '').toLowerCase().includes(query) ||
                                       (n.subject || '').toLowerCase().includes(query);
-                const matchesSem = sem === 'ALL' || n.semester === sem;
+                const noteSem = String(n.semester || '').replace(/^sem\s*/i, '').trim();
+                const matchesSem = sem === 'ALL' || noteSem === sem;
                 return matchesSearch && matchesSem;
             });
             renderNotes(filtered);
@@ -326,10 +326,10 @@
         // Document AI Modal Controls
         function openDocAiModal(noteId, title) {
             activeNoteId = noteId;
-            document.getElementById('docAiTitle').textContent = `AI: ${title}`;
+            document.getElementById('docAiTitle').textContent = title;
             document.getElementById('docChatHistory').innerHTML = `
-                <div class="bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-600 shadow-sm">
-                    Ask questions directly about <strong>${escapeHtml(title)}</strong>!
+                <div class="bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-600 shadow-sm">
+                    Ask any question about <strong>${escapeHtml(title)}</strong>!
                 </div>
             `;
             document.getElementById('docAiModal').classList.remove('hidden');
@@ -356,7 +356,7 @@
                 input.value = '';
                 history.innerHTML += `
                     <div class="flex justify-end">
-                        <div class="bg-indigo-600 text-white rounded-2xl px-4 py-3 text-sm max-w-[80%] shadow-sm">
+                        <div class="bg-indigo-600 text-white rounded-2xl px-4 py-2.5 text-sm max-w-[80%] shadow-sm">
                             ${escapeHtml(question)}
                         </div>
                     </div>
@@ -366,8 +366,8 @@
             const loaderId = 'loader-' + Date.now();
             history.innerHTML += `
                 <div id="${loaderId}" class="flex justify-start">
-                    <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-500 shadow-sm">
-                        Analyzing note...
+                    <div class="bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-500 shadow-sm">
+                        Analyzing PDF...
                     </div>
                 </div>
             `;
@@ -395,7 +395,7 @@
 
                 document.getElementById(loaderId).outerHTML = `
                     <div class="flex justify-start">
-                        <div class="bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm text-slate-800 max-w-[90%] shadow-sm markdown-body">
+                        <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-800 max-w-[92%] shadow-sm markdown-body overflow-x-auto">
                             ${marked.parse(data.response)}
                         </div>
                     </div>
@@ -403,7 +403,7 @@
             } catch (err) {
                 document.getElementById(loaderId).outerHTML = `
                     <div class="flex justify-start">
-                        <div class="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-xs text-red-700 flex items-center justify-between gap-3 w-full">
+                        <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-700 flex items-center justify-between gap-3 w-full">
                             <span>⚠️ <strong>Failed:</strong> ${escapeHtml(err.message)}</span>
                             <button onclick="this.closest('.flex').remove(); handleDocAsk(null, lastDocQuestion);"
                                 class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1 rounded-lg shrink-0">
@@ -418,16 +418,17 @@
             }
         }
 
-        // General StudyBot Modal Controls
-        function openStudyBotModal() {
-            document.getElementById('studyBotModal').classList.remove('hidden');
-            document.getElementById('studyBotModal').classList.add('flex');
-            document.getElementById('botQuestionInput').focus();
-        }
-
-        function closeStudyBotModal() {
-            document.getElementById('studyBotModal').classList.add('hidden');
-            document.getElementById('studyBotModal').classList.remove('flex');
+        // Docked StudyBot Drawer Controls
+        function toggleStudyBot() {
+            const drawer = document.getElementById('studyBotDrawer');
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                drawer.classList.add('flex');
+                document.getElementById('botQuestionInput').focus();
+            } else {
+                drawer.classList.add('hidden');
+                drawer.classList.remove('flex');
+            }
         }
 
         async function handleBotAsk(e, retryText = null) {
@@ -444,7 +445,7 @@
                 input.value = '';
                 history.innerHTML += `
                     <div class="flex justify-end">
-                        <div class="bg-indigo-600 text-white rounded-2xl px-4 py-3 text-sm max-w-[80%] shadow-sm">
+                        <div class="bg-indigo-600 text-white rounded-xl px-3.5 py-2 text-sm max-w-[85%] shadow-sm">
                             ${escapeHtml(message)}
                         </div>
                     </div>
@@ -454,7 +455,7 @@
             const loaderId = 'bot-loader-' + Date.now();
             history.innerHTML += `
                 <div id="${loaderId}" class="flex justify-start">
-                    <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-500 shadow-sm">
+                    <div class="bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-500 shadow-sm">
                         Thinking...
                     </div>
                 </div>
@@ -479,19 +480,19 @@
                 if (!res.ok) throw new Error(data.detail || 'StudyBot inference failed');
 
                 document.getElementById(loaderId).outerHTML = `
-                    <div class="flex justify-start">
-                        <div class="bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm text-slate-800 max-w-[90%] shadow-sm markdown-body">
+                    <div class="flex justify-start w-full">
+                        <div class="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 w-full shadow-sm markdown-body overflow-x-auto">
                             ${marked.parse(data.response)}
                         </div>
                     </div>
                 `;
             } catch (err) {
                 document.getElementById(loaderId).outerHTML = `
-                    <div class="flex justify-start">
-                        <div class="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-xs text-red-700 flex items-center justify-between gap-3 w-full">
+                    <div class="flex justify-start w-full">
+                        <div class="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-xs text-red-700 flex items-center justify-between gap-2 w-full">
                             <span>⚠️ <strong>Failed:</strong> ${escapeHtml(err.message)}</span>
                             <button onclick="this.closest('.flex').remove(); handleBotAsk(null, lastBotQuestion);"
-                                class="bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1 rounded-lg shrink-0">
+                                class="bg-red-600 hover:bg-red-700 text-white font-semibold px-2.5 py-1 rounded-lg shrink-0">
                                 🔄 Retry
                             </button>
                         </div>
